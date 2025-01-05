@@ -1,8 +1,8 @@
 {
-  "name": "plugin-sample-vite-svelte",
-  "author": "frostime",
-  "url": "https://github.com/siyuan-note/plugin-sample-vite-svelte",
-  "version": "0.3.6",
+  "name": "siyuan_doctree_fake_subfolder",
+  "author": "zxkmm",
+  "url": "https://github.com/zxkmm/siyuan_doctree_fake_subfolder",
+  "version": "0.0.1",
   "minAppVersion": "3.0.12",
   "backends": [
     "windows",
@@ -15,18 +15,16 @@
   ],
   "frontends": [
     "desktop",
-    "mobile",
     "browser-desktop",
-    "browser-mobile",
     "desktop-window"
   ],
   "displayName": {
-    "en_US": "Plugin sample with vite and svelte",
-    "zh_CN": "插件样例 vite + svelte 版"
+    "en_US": "Doctree Fake Subfolder",
+    "zh_CN": "多层笔记本"
   },
   "description": {
-    "en_US": "SiYuan plugin sample with vite and svelte",
-    "zh_CN": "使用 vite 和 svelte 开发的思源插件样例"
+    "en_US": "Provide capabilities to create nested folders in doctree",
+    "zh_CN": "提供在思源文档树中创建多层笔记本的能力"
   },
   "readme": {
     "en_US": "README.md",
@@ -38,8 +36,10 @@
     ]
   },
   "keywords": [
-    "plugin",
-    "sample",
-    "插件样例"
+    "siyuan_doctree_fake_subfolder",
+    "zxkmm",
+    "文档树",
+    "笔记本",
+    "嵌套"
   ]
 }
