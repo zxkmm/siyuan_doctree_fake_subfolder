@@ -102,7 +102,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     this.settingUtils.set("ids_that_should_be_treated_as_subfolder", newIdsStr);
     this.settingUtils.save();
 
-    // update local var
+    // only need to update local var cuz when next boot it will load from settings anyway
     this.treatAsSubfolderIdSet = tempSet;
   }
 
