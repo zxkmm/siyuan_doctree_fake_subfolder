@@ -1,4 +1,14 @@
 {
+
+    "consideredThisDocumentAsSubfolder": "Considered this document as subfolder：",
+    "recoveredThisDocumentFromSubfolder": "Recovered this document from subfolder：",
+    "enterNormalMode": "Enter normal mode",
+    "enterCaptureMode": "Enter capture mode， click the item in document tree to add it to the subfolder list",
+    "enterRevealMode": "Enter reveal mode， click the item in document tree to view it temporarily（but not recover to normal document）",
+    "normalMode": "Document tree subfolder plugin: Normal mode",
+    "captureMode": "Document tree subfolder plugin: Capture mode",
+    "revealMode": "Document tree subfolder plugin: Reveal mode",
+
     "enableUsingEmojiAsSubfolderIdentify": "Enable using emoji as subfolder identify",
     "enableUsingEmojiAsSubfolderIdentifyDesc": "When enabled, selected emoji will be used as subfolder identify, that those documents that contains these emoji will be treated as subfolder",
     "emojisThatShouldBeTreatedAsSubfolder": "Emojis that should be treated as subfolder",

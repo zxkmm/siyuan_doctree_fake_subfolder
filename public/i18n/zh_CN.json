@@ -1,4 +1,15 @@
 {
+    "consideredThisDocumentAsSubfolder": "已将此文档视为子文件夹：",
+    "recoveredThisDocumentFromSubfolder": "已将此文档恢复为普通文档：",
+    "enterNormalMode": "已进入普通模式",
+    "enterCaptureMode": "已进入捕获模式，点击文档树的项目以把它们加入“视为子文件夹”列表",
+    "enterRevealMode": "已进入揭露模式， 点击已被视为子文件夹的文档以临时查看（但不会恢复为普通文档）",
+    "normalMode": "文档树子文档插件：普通模式",
+    "captureMode": "文档树子文档插件：捕获模式",
+    "revealMode": "文档树子文档插件：揭露模式",
+
+
+
     "enableUsingEmojiAsSubfolderIdentify": "启用使用 emoji 作为子文件夹标识",
     "enableUsingEmojiAsSubfolderIdentifyDesc": "启用后，那些使用这些 emoji 作为图标的文档将被视为子文件夹（子笔记本）",
     "emojisThatShouldBeTreatedAsSubfolder": "应该被视为子文件夹的文档的 emoji",
