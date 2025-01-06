@@ -106,6 +106,8 @@ export class SettingUtils {
                 }
                 this.plugin.data[this.name] = data;
                 this.save(data);
+
+                window.location.reload();
             },
             destroyCallback: () => {
                 //Restore the original value

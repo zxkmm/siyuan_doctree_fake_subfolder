@@ -1,6 +1,6 @@
 {
   "name": "siyuan_doctree_fake_subfolder",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "Provide capabilities to create nested folders in doctree",
   "repository": "",
@@ -33,5 +33,6 @@
     "vite": "^5.2.9",
     "vite-plugin-static-copy": "^1.0.2",
     "vite-plugin-zip-pack": "^1.0.5"
-  }
+  },
+  "packageManager": "pnpm@9.15.1+sha512.1acb565e6193efbebda772702950469150cf12bcc764262e7587e71d19dc98a423dff9536e57ea44c49bdf790ff694e83c27be5faa23d67e0c033b583be4bfcf"
 }

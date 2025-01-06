@@ -1,9 +1,5 @@
-import {
-  Plugin,
-  getFrontend,
-} from "siyuan";
+import { Plugin, getFrontend } from "siyuan";
 import "@/index.scss";
-
 
 import { SettingUtils } from "./libs/setting-utils";
 
@@ -43,32 +39,38 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     // dom
     const element = document.querySelector(`li[data-node-id="${nodeId}"]`);
     if (!element) {
-      console.warn("did not found element, probably caused by theme or something");
+      console.warn(
+        "did not found element, probably caused by theme or something"
+      );
       return;
     }
 
     // path
     const id = element.getAttribute("data-node-id");
     if (!id) {
-      console.warn("node missing id attribute, probably caused by theme or something");
+      console.warn(
+        "node missing id attribute, probably caused by theme or something"
+      );
       return;
     }
 
-    // debug hint
-    if (this.if_provided_id_in_treat_as_subfolder_set(id)) {
-      console.log(`forbid open: ${id} (node id: ${nodeId})`);
-    } else {
-      console.log(`allow open: ${id} (node id: ${nodeId})`);
-    }
+    // // debug hint
+    // if (this.if_provided_id_in_treat_as_subfolder_set(id)) {
+    //   console.log(`forbid open: ${id} (node id: ${nodeId})`);
+    // } else {
+    //   console.log(`allow open: ${id} (node id: ${nodeId})`);
+    // }
   }
 
   init_listener() {
-    console.log("init_listener");
+    // console.log("init_listener");
     // wait for DOM loaded
     setTimeout(() => {
       const elements = document.querySelectorAll(".b3-list--background");
       if (elements.length === 0) {
-        console.warn("not found .b3-list--background element, probably caused by theme or something");
+        console.warn(
+          "not found .b3-list--background element, probably caused by theme or something"
+        );
         return;
       }
 
@@ -78,7 +80,9 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           "click",
           (e) => {
             if (!e.target || !(e.target instanceof Element)) {
-              console.warn("click target is invalid, probably caused by theme or something");
+              console.warn(
+                "click target is invalid, probably caused by theme or something"
+              );
               return;
             }
 
@@ -111,7 +115,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                   !e.target.closest(".b3-list-item__toggle") && // allow the toggle button
                   !e.target.closest(".b3-list-item__icon") // allow the emoji icon
                 ) {
-                  // prevent 
+                  // prevent
                   e.preventDefault();
                   e.stopPropagation();
 
@@ -126,19 +130,21 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                 // allow original behavior
                 this.on_click_doctree_node(nodeId);
               } catch (err) {
-                console.error("error when handle document tree node click:", err);
+                console.error(
+                  "error when handle document tree node click:",
+                  err
+                );
               }
             }
           },
           true
-        ); // work around for dynamic li 
+        ); // work around for dynamic li
       });
-
     }, 100); // TODO: check if necessary
   }
 
   expand_subfolder(item: HTMLElement) {
-    console.log(item, "expand_subfolder");
+    // console.log(item, "expand_subfolder");
     if (!item) {
       console.warn("not found li item, probably caused by theme or something");
       return;
@@ -147,7 +153,9 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     // the toggle btn
     const toggleButton = item.querySelector(".b3-list-item__toggle");
     if (!toggleButton) {
-      console.warn("arrow button missing. probably caused by theme or something");
+      console.warn(
+        "arrow button missing. probably caused by theme or something"
+      );
       return;
     }
 
@@ -166,7 +174,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     this.treatAsSubfolderEmojiSet = new Set();
 
     this.data[STORAGE_NAME] = { readonlyText: "Readonly" };
-
 
     this.settingUtils = new SettingUtils({
       plugin: this,
@@ -187,21 +194,21 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       title: "Emojies that should be treated as subfolder",
       description: "seperate by comma",
     });
-    // this.settingUtils.addItem({
-    //   key: "enable_using_id_as_subfolder_identify",
-    //   value: true,
-    //   type: "checkbox",
-    //   title: "Enable using id as subfolder identify",
-    //   description:
-    //     "When enabled, selected id will be used as subfolder identify, that those documents that contains these id will be treated as subfolder",
-    // });
-    // this.settingUtils.addItem({
-    //   key: "ids_that_should_be_treated_as_subfolder",
-    //   value: "",
-    //   type: "textarea",
-    //   title: "Ids that should be treated as subfolder",
-    //   description: "seperate by comma",
-    // });
+    this.settingUtils.addItem({
+      key: "enable_using_id_as_subfolder_identify",
+      value: true,
+      type: "checkbox",
+      title: "Enable using id as subfolder identify",
+      description:
+        "When enabled, selected id will be used as subfolder identify, that those documents that contains these id will be treated as subfolder",
+    });
+    this.settingUtils.addItem({
+      key: "ids_that_should_be_treated_as_subfolder",
+      value: "",
+      type: "textarea",
+      title: "Ids that should be treated as subfolder",
+      description: "seperate by comma",
+    });
     this.settingUtils.addItem({
       key: "Hint",
       value: "",
@@ -218,34 +225,47 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         error
       );
     }
-
-    // load emoji from setting json 2 set
-    const emojisStr = this.settingUtils.get(
-      "emojies_that_should_be_treated_as_subfolder"
-    ) as string;
-    if (emojisStr) {
-      const emojis = emojisStr.split(",").map((e) => e.trim());
-      this.treatAsSubfolderEmojiSet = new Set(emojis);
-    }
-
-    // load ids
-    const idsStr = this.settingUtils.get("ids_that_should_be_treated_as_subfolder") as string;
-    if (idsStr) {
-      const ids = idsStr.split(",").map((e) => e.trim());
-      this.treatAsSubfolderIdSet = new Set(ids);
-    }
   }
-
 
   onLayoutReady() {
     this.init_listener();
-    // this.loadData(STORAGE_NAME);
     this.settingUtils.load();
+
+    // load emoji setting
+    const emojisStr = this.settingUtils.get(
+      "emojies_that_should_be_treated_as_subfolder"
+    ) as string;
+    this.treatAsSubfolderEmojiSet = this.stringToSet(emojisStr);
+    
+    // console.log("---emojisStr", emojisStr);
+    // console.log("---this.treatAsSubfolderEmojiSet", this.treatAsSubfolderEmojiSet);
+
+    // id 
+    const idsStr = this.settingUtils.get(
+      "ids_that_should_be_treated_as_subfolder"
+    ) as string;
+    this.treatAsSubfolderIdSet = this.stringToSet(idsStr);
+
+    // console.log("---idsStr", idsStr);
+    // console.log("---this.treatAsSubfolderIdSet", this.treatAsSubfolderIdSet);
   }
 
-  async onunload() {
-  }
+  async onunload() {}
 
-  uninstall() {
-  }
+  uninstall() {}
+
+    /* ----------------v helpers ---------------- */
+    private stringToSet(str: string): Set<string> {
+      if (!str) {
+        return new Set();
+      }
+      return new Set(
+        str
+          .split(/[,，]/)
+          .map(item => item.trim())  // remove space
+          .filter(item => item.length > 0) // remove empty string
+      );
+    }
+
+    /* ----------------^ helpers ---------------- */
 }
