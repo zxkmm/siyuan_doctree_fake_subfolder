@@ -1,4 +1,12 @@
 {
+    "enableUsingEmojiAsSubfolderIdentify": "启用使用 emoji 作为子文件夹标识",
+    "enableUsingEmojiAsSubfolderIdentifyDesc": "启用后，那些使用这些 emoji 作为图标的文档将被视为子文件夹（子笔记本）",
+    "emojisThatShouldBeTreatedAsSubfolder": "应该被视为子文件夹的文档的 emoji",
+    "emojisThatShouldBeTreatedAsSubfolderDesc": "中英文逗号分割，空格和空行不影响",
+    "enableUsingIdAsSubfolderIdentify": "启用使用 id 作为子文件夹标识",
+    "enableUsingIdAsSubfolderIdentifyDesc": "启用后，那些使用这些 id 作为图标的文档将被视为子文件夹（子笔记本）",
+    "idsThatShouldBeTreatedAsSubfolder": "应该被视为子文件夹的文档的 id",
+    "idsThatShouldBeTreatedAsSubfolderDesc": "中英文逗号分割，空格和空行不影响",
     "hintTitle": "关于",
-    "hintDesc": "<a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>🔗 siyuan_doctree_fake_subfolder</a><br>💻 @zxkmm"
+    "hintDesc": "<a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>🔗 siyuan_doctree_fake_subfolder</a><br>AGLP3.0 协议开源<br>💻 @zxkmm"
 }

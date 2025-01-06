@@ -183,31 +183,29 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       key: "enable_using_emoji_as_subfolder_identify",
       value: true,
       type: "checkbox",
-      title: "Enable using emoji as subfolder identify",
-      description:
-        "When enabled, selected emoji will be used as subfolder identify, that those documents that contains these emoji will be treated as subfolder",
+      title: this.i18n.enableUsingEmojiAsSubfolderIdentify,
+      description: this.i18n.enableUsingEmojiAsSubfolderIdentifyDesc,
     });
     this.settingUtils.addItem({
       key: "emojies_that_should_be_treated_as_subfolder",
       value: "🗃️,📂,📁",
       type: "textarea",
-      title: "Emojies that should be treated as subfolder",
-      description: "seperate by comma",
+      title: this.i18n.emojisThatShouldBeTreatedAsSubfolder,
+      description: this.i18n.emojisThatShouldBeTreatedAsSubfolderDesc,
     });
     this.settingUtils.addItem({
       key: "enable_using_id_as_subfolder_identify",
       value: true,
       type: "checkbox",
-      title: "Enable using id as subfolder identify",
-      description:
-        "When enabled, selected id will be used as subfolder identify, that those documents that contains these id will be treated as subfolder",
+      title: this.i18n.enableUsingIdAsSubfolderIdentify,
+      description: this.i18n.enableUsingIdAsSubfolderIdentifyDesc,
     });
     this.settingUtils.addItem({
       key: "ids_that_should_be_treated_as_subfolder",
       value: "",
       type: "textarea",
-      title: "Ids that should be treated as subfolder",
-      description: "seperate by comma",
+      title: this.i18n.idsThatShouldBeTreatedAsSubfolder,
+      description: this.i18n.idsThatShouldBeTreatedAsSubfolderDesc,
     });
     this.settingUtils.addItem({
       key: "Hint",
