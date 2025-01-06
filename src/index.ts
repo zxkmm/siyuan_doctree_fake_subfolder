@@ -83,16 +83,24 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     if (tempSet.has(nodeId)) {
       // delete
       tempSet.delete(nodeId);
-      showMessage(`${this.i18n.recoveredThisDocumentFromSubfolder} ${nodeId}`, 2000, "error"); //not err, just prettier
+      showMessage(
+        `${this.i18n.recoveredThisDocumentFromSubfolder} ${nodeId}`,
+        2000,
+        "error"
+      ); //not err, just prettier
     } else {
       // add
       tempSet.add(nodeId);
-      showMessage(`${this.i18n.consideredThisDocumentAsSubfolder} ${nodeId}`, 2000);
+      showMessage(
+        `${this.i18n.consideredThisDocumentAsSubfolder} ${nodeId}`,
+        2000
+      );
     }
 
     // convery back
     const newIdsStr = Array.from(tempSet).join(",");
     this.settingUtils.set("ids_that_should_be_treated_as_subfolder", newIdsStr);
+    this.settingUtils.save();
 
     // update local var
     this.treatAsSubfolderIdSet = tempSet;
@@ -163,9 +171,17 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                   }
 
                   return false;
-                } else if (this.mode == DocTreeFakeSubfolderMode.Capture) {
+                } else if (
+                  this.mode == DocTreeFakeSubfolderMode.Capture &&
+                  !e.target.closest(".b3-list-item__toggle") &&
+                  !e.target.closest(".b3-list-item__icon") // these two still needs not to be able to reach the arrow and emoji icon
+                ) {
                   this.capture_to_set_unset_treat_as_subfolder_setting(nodeId);
-                } else if (this.mode == DocTreeFakeSubfolderMode.Reveal) {
+                } else if (
+                  this.mode == DocTreeFakeSubfolderMode.Reveal &&
+                  !e.target.closest(".b3-list-item__toggle") &&
+                  !e.target.closest(".b3-list-item__icon") //same here
+                ) {
                   //fallthrough
                 }
 
