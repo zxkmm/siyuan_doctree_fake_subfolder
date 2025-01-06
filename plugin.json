@@ -24,7 +24,7 @@
   },
   "description": {
     "en_US": "Provide capabilities to create nested folders in doctree",
-    "zh_CN": "提供在思源文档树中创建多层笔记本的能力"
+    "zh_CN": "提供在思源文档树中创建多层笔记本的能力(点击子文档可展开但是不打开)"
   },
   "readme": {
     "en_US": "README.md",
