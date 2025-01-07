@@ -16,7 +16,8 @@
   "frontends": [
     "desktop",
     "browser-desktop",
-    "desktop-window"
+    "desktop-window",
+    "mobile"
   ],
   "displayName": {
     "en_US": "Doctree Fake Subfolder",
