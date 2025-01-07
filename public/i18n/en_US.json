@@ -8,6 +8,8 @@
     "normalMode": "Document tree subfolder plugin: Normal mode",
     "captureMode": "Document tree subfolder plugin: Capture mode",
     "revealMode": "Document tree subfolder plugin: Reveal mode",
+    "enableModeSwitchButtons": "Enable mode switch buttons",
+    "enableModeSwitchButtonsDesc": "When enabled, mode switch buttons will be displayed at the top of the document tree, which can be used to switch between normal mode, capture mode and reveal mode",
 
     "enableUsingEmojiAsSubfolderIdentify": "Enable using emoji as subfolder identify",
     "enableUsingEmojiAsSubfolderIdentifyDesc": "When enabled, selected emoji will be used as subfolder identify, that those documents that contains these emoji will be treated as subfolder",
@@ -18,5 +20,5 @@
     "idsThatShouldBeTreatedAsSubfolder": "Ids that should be treated as subfolder",
     "idsThatShouldBeTreatedAsSubfolderDesc": "seperate by comma",
     "hintTitle":"About",
-    "hintDesc":"<a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>siyuan_doctree_fake_subfolder</a><br>@zxkmm"
+    "hintDesc":"<a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>siyuan_doctree_fake_subfolder</a><br>AGLP3.0 License<br>💻 @zxkmm"
 }

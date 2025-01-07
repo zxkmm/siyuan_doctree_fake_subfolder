@@ -7,6 +7,8 @@
     "normalMode": "文档树子文档插件：普通模式",
     "captureMode": "文档树子文档插件：捕获模式",
     "revealMode": "文档树子文档插件：揭露模式",
+    "enableModeSwitchButtons": "启用模式切换按钮",
+    "enableModeSwitchButtonsDesc": "启用后，在文档树上方会显示模式切换按钮，可以方便切换普通模式/捕获模式/揭露模式",
 
 
 

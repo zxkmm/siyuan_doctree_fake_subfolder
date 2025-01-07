@@ -266,6 +266,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       description: this.i18n.idsThatShouldBeTreatedAsSubfolderDesc,
     });
     this.settingUtils.addItem({
+      key: "enable_mode_switch_buttons",
+      value: true,
+      type: "checkbox",
+      title: this.i18n.enableModeSwitchButtons,
+      description: this.i18n.enableModeSwitchButtonsDesc,
+    });
+    this.settingUtils.addItem({
       key: "Hint",
       value: "",
       type: "hint",
@@ -282,7 +289,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       );
     }
 
-    this.addIcons(`
+    this.addIcons(` 
       <symbol id="iconDoctreeFakeSubfolderNormalMode" viewBox="0 0 48 48">
           <path d="M26,30H42a2,2,0,0,0,2-2V20a2,2,0,0,0-2-2H26a2,2,0,0,0-2,2v2H16V14h6a2,2,0,0,0,2-2V4a2,2,0,0,0-2-2H6A2,2,0,0,0,4,4v8a2,2,0,0,0,2,2h6V40a2,2,0,0,0,2,2H24v2a2,2,0,0,0,2,2H42a2,2,0,0,0,2-2V36a2,2,0,0,0-2-2H26a2,2,0,0,0-2,2v2H16V26h8v2A2,2,0,0,0,26,30Z"></path>
           </symbol>
@@ -322,78 +329,79 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
 
     // console.log("---idsStr", idsStr);
     // console.log("---this.treatAsSubfolderIdSet", this.treatAsSubfolderIdSet);
+    if (this.settingUtils.get("enable_mode_switch_buttons")) { // ya ummmmm this is the best that i can do within siyuan's api for plugins
+      const topBarElementDoctreeFakeSubfolderNormalMode = this.addTopBar({
+        icon: "iconDoctreeFakeSubfolderNormalMode",
+        title: this.i18n.normalMode,
+        position: "left",
+        callback: () => {
+          showMessage(this.i18n.enterNormalMode, 2000);
+          this.mode = DocTreeFakeSubfolderMode.Normal;
+          topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
+            "var(--b3-toolbar-color)";
+          topBarElementDoctreeFakeSubfolderNormalMode.style.color =
+            "var(--b3-toolbar-background)";
+          topBarElementDoctreeFakeSubfolderCaptureMode.style.backgroundColor =
+            "var(--b3-toolbar-background)";
+          topBarElementDoctreeFakeSubfolderCaptureMode.style.color =
+            "var(--b3-toolbar-color)";
+          topBarElementDoctreeFakeSubfolderRevealMode.style.backgroundColor =
+            "var(--b3-toolbar-background)";
+          topBarElementDoctreeFakeSubfolderRevealMode.style.color =
+            "var(--b3-toolbar-color)";
+        },
+      });
 
-    const topBarElementDoctreeFakeSubfolderNormalMode = this.addTopBar({
-      icon: "iconDoctreeFakeSubfolderNormalMode",
-      title: this.i18n.normalMode,
-      position: "left",
-      callback: () => {
-        showMessage(this.i18n.enterNormalMode, 2000);
-        this.mode = DocTreeFakeSubfolderMode.Normal;
-        topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
-          "var(--b3-toolbar-color)";
-        topBarElementDoctreeFakeSubfolderNormalMode.style.color =
-          "var(--b3-toolbar-background)";
-        topBarElementDoctreeFakeSubfolderCaptureMode.style.backgroundColor =
-          "var(--b3-toolbar-background)";
-        topBarElementDoctreeFakeSubfolderCaptureMode.style.color =
-          "var(--b3-toolbar-color)";
-        topBarElementDoctreeFakeSubfolderRevealMode.style.backgroundColor =
-          "var(--b3-toolbar-background)";
-        topBarElementDoctreeFakeSubfolderRevealMode.style.color =
-          "var(--b3-toolbar-color)";
-      },
-    });
+      const topBarElementDoctreeFakeSubfolderCaptureMode = this.addTopBar({
+        icon: "iconDoctreeFakeSubfolderCaptureMode",
+        title: this.i18n.captureMode,
+        position: "left",
+        callback: () => {
+          showMessage(this.i18n.enterCaptureMode, 8000);
+          this.mode = DocTreeFakeSubfolderMode.Capture;
+          topBarElementDoctreeFakeSubfolderCaptureMode.style.backgroundColor =
+            "var(--b3-toolbar-color)";
+          topBarElementDoctreeFakeSubfolderCaptureMode.style.color =
+            "var(--b3-toolbar-background)";
+          topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
+            "var(--b3-toolbar-background)";
+          topBarElementDoctreeFakeSubfolderNormalMode.style.color =
+            "var(--b3-toolbar-color)";
+          topBarElementDoctreeFakeSubfolderRevealMode.style.backgroundColor =
+            "var(--b3-toolbar-background)";
+          topBarElementDoctreeFakeSubfolderRevealMode.style.color =
+            "var(--b3-toolbar-color)";
+        },
+      });
 
-    const topBarElementDoctreeFakeSubfolderCaptureMode = this.addTopBar({
-      icon: "iconDoctreeFakeSubfolderCaptureMode",
-      title: this.i18n.captureMode,
-      position: "left",
-      callback: () => {
-        showMessage(this.i18n.enterCaptureMode, 8000);
-        this.mode = DocTreeFakeSubfolderMode.Capture;
-        topBarElementDoctreeFakeSubfolderCaptureMode.style.backgroundColor =
-          "var(--b3-toolbar-color)";
-        topBarElementDoctreeFakeSubfolderCaptureMode.style.color =
-          "var(--b3-toolbar-background)";
-        topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
-          "var(--b3-toolbar-background)";
-        topBarElementDoctreeFakeSubfolderNormalMode.style.color =
-          "var(--b3-toolbar-color)";
-        topBarElementDoctreeFakeSubfolderRevealMode.style.backgroundColor =
-          "var(--b3-toolbar-background)";
-        topBarElementDoctreeFakeSubfolderRevealMode.style.color =
-          "var(--b3-toolbar-color)";
-      },
-    });
+      const topBarElementDoctreeFakeSubfolderRevealMode = this.addTopBar({
+        icon: "iconDoctreeFakeSubfolderRevealMode",
+        title: this.i18n.revealMode,
+        position: "left",
+        callback: () => {
+          showMessage(this.i18n.enterRevealMode, 8000);
+          this.mode = DocTreeFakeSubfolderMode.Reveal;
+          topBarElementDoctreeFakeSubfolderRevealMode.style.backgroundColor =
+            "var(--b3-toolbar-color)";
+          topBarElementDoctreeFakeSubfolderRevealMode.style.color =
+            "var(--b3-toolbar-background)";
+          topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
+            "var(--b3-toolbar-background)";
+          topBarElementDoctreeFakeSubfolderNormalMode.style.color =
+            "var(--b3-toolbar-color)";
+          topBarElementDoctreeFakeSubfolderCaptureMode.style.backgroundColor =
+            "var(--b3-toolbar-background)";
+          topBarElementDoctreeFakeSubfolderCaptureMode.style.color =
+            "var(--b3-toolbar-color)";
+        },
+      });
 
-    const topBarElementDoctreeFakeSubfolderRevealMode = this.addTopBar({
-      icon: "iconDoctreeFakeSubfolderRevealMode",
-      title: this.i18n.revealMode,
-      position: "left",
-      callback: () => {
-        showMessage(this.i18n.enterRevealMode, 8000);
-        this.mode = DocTreeFakeSubfolderMode.Reveal;
-        topBarElementDoctreeFakeSubfolderRevealMode.style.backgroundColor =
-          "var(--b3-toolbar-color)";
-        topBarElementDoctreeFakeSubfolderRevealMode.style.color =
-          "var(--b3-toolbar-background)";
-        topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
-          "var(--b3-toolbar-background)";
-        topBarElementDoctreeFakeSubfolderNormalMode.style.color =
-          "var(--b3-toolbar-color)";
-        topBarElementDoctreeFakeSubfolderCaptureMode.style.backgroundColor =
-          "var(--b3-toolbar-background)";
-        topBarElementDoctreeFakeSubfolderCaptureMode.style.color =
-          "var(--b3-toolbar-color)";
-      },
-    });
-
-    this.mode = DocTreeFakeSubfolderMode.Normal;
-    topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
-      "var(--b3-toolbar-color)";
-    topBarElementDoctreeFakeSubfolderNormalMode.style.color =
-      "var(--b3-toolbar-background)";
+      this.mode = DocTreeFakeSubfolderMode.Normal;
+      topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
+        "var(--b3-toolbar-color)";
+      topBarElementDoctreeFakeSubfolderNormalMode.style.color =
+        "var(--b3-toolbar-background)";
+    }
   }
 
   async onunload() {}
