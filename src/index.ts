@@ -17,11 +17,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private treatAsSubfolderEmojiSet: Set<string>;
   private mode: DocTreeFakeSubfolderMode;
   private to_normal_mode_count = 0;
-    //^ this is because when user enter the app, it not should display the "go to -ed normal mode noti",
+  //^ this is because when user enter the app, it not should display the "go to -ed normal mode noti",
   //thus count and only display for 2nd times whatsoever
   private frontend: string;
   private backend: string;
-
+  private isDesktop: boolean;
+  private isPhone: boolean;
+  private isTablet: boolean;
 
   ifProvidedIdInTreatAsSubfolderSet(id: string) {
     return this.treatAsSubfolderIdSet.has(id);
@@ -116,91 +118,110 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     console.log("init_listener");
     // wait dom
     setTimeout(() => {
-        const elements = document.querySelectorAll(".b3-list--background");
-        if (elements.length === 0) {
-            console.warn(
-                "not found .b3-list--background element, probably caused by theme or something"
-            );
-            return;
+      const elements = document.querySelectorAll(".b3-list--background");
+      if (elements.length === 0) {
+        console.warn(
+          "not found .b3-list--background element, probably caused by theme or something"
+        );
+        return;
+      }
+
+      // event handler
+      const handleEvent = (e: MouseEvent | TouchEvent) => {
+        if (!e.target || !(e.target instanceof Element)) {
+          console.warn(
+            "event target is invalid, probably caused by theme or something"
+          );
+          return;
         }
 
-        // event handler
-        const handleEvent = (e: MouseEvent | TouchEvent) => {
-            if (!e.target || !(e.target instanceof Element)) {
-                console.warn(
-                    "event target is invalid, probably caused by theme or something"
-                );
-                return;
-            }
+        const listItem = e.target.closest(
+          'li[data-type="navigation-file"]'
+        ) as HTMLElement | null;
 
-            const listItem = e.target.closest(
-                'li[data-type="navigation-file"]'
-            ) as HTMLElement | null;
+        if (!listItem || e.target.closest(".b3-list-item__action")) {
+          return;
+        }
 
-            if (!listItem || e.target.closest(".b3-list-item__action")) {
-                return;
-            }
+        const nodeId = listItem.getAttribute("data-node-id");
+        const path = listItem.getAttribute("data-path");
 
-            const nodeId = listItem.getAttribute("data-node-id");
-            const path = listItem.getAttribute("data-path");
+        try {
+          const clickedToggle = e.target.closest(".b3-list-item__toggle");
+          const clickedIcon = e.target.closest(".b3-list-item__icon");
+          const isSpecialClick = clickedToggle || clickedIcon;
 
-            try {
-                const clickedToggle = e.target.closest(".b3-list-item__toggle");
-                const clickedIcon = e.target.closest(".b3-list-item__icon");
-                const isSpecialClick = clickedToggle || clickedIcon;
+          if (!nodeId || !this.mode) {
+            return;
+          }
 
-                if (!nodeId || !this.mode) {
-                    return;
-                }
+          switch (this.mode) {
+            case DocTreeFakeSubfolderMode.Normal:
+              if (
+                !isSpecialClick &&
+                ((this.settingUtils.get(
+                  "enable_using_emoji_as_subfolder_identify"
+                ) &&
+                  this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(listItem)) ||
+                  (this.settingUtils.get(
+                    "enable_using_id_as_subfolder_identify"
+                  ) &&
+                    this.ifProvidedIdInTreatAsSubfolderSet(nodeId)))
+              ) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.expandSubfolder(listItem);
+                return false;
+              }
+              break;
 
-                switch (this.mode) {
-                    case DocTreeFakeSubfolderMode.Normal:
-                        if (
-                            !isSpecialClick &&
-                            ((this.settingUtils.get(
-                                "enable_using_emoji_as_subfolder_identify"
-                            ) &&
-                                this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(
-                                    listItem
-                                )) ||
-                                (this.settingUtils.get(
-                                    "enable_using_id_as_subfolder_identify"
-                                ) &&
-                                    this.ifProvidedIdInTreatAsSubfolderSet(nodeId)))
-                        ) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            this.expandSubfolder(listItem);
-                            return false;
-                        }
-                        break;
+            case DocTreeFakeSubfolderMode.Capture:
+              if (!isSpecialClick) {
+                this.captureToSetUnsetTreatAsSubfolderSetting(nodeId);
+              }
+              break;
 
-                    case DocTreeFakeSubfolderMode.Capture:
-                        if (!isSpecialClick) {
-                            this.captureToSetUnsetTreatAsSubfolderSetting(
-                                nodeId
-                            );
-                        }
-                        break;
+            case DocTreeFakeSubfolderMode.Reveal:
+              // fallthrough
+              break;
+          }
 
-                    case DocTreeFakeSubfolderMode.Reveal:
-                        // fallthrough
-                        break;
-                }
+          this.onClickDoctreeNode(nodeId);
+        } catch (err) {
+          console.error("error when handle document tree node click:", err);
+        }
+      };
 
-                this.onClickDoctreeNode(nodeId);
-            } catch (err) {
-                console.error("error when handle document tree node click:", err);
-            }
-        };
+      var already_shown_the_incompatible_device_message = false;
 
-        // add listener
-        elements.forEach((element) => {
-            // click
-            element.addEventListener("click", handleEvent, true);
-            // touch
-            element.addEventListener("touchend", handleEvent, true);
-        });
+      // add listener
+      elements.forEach((element) => {
+        if (this.isDesktop) {
+          // click
+          element.addEventListener("click", handleEvent, true);
+          // touch
+          element.addEventListener("touchend", handleEvent, true);
+        } else if (this.isPhone || this.isTablet) {
+          // click
+          element.addEventListener("click", handleEvent, true);
+        } else {
+          if (!already_shown_the_incompatible_device_message) {
+            showMessage(
+              "文档树子文件夹插件：开发者没有为您的设备做准备，清将如下信息反馈给开发者：" +
+                this.frontend +
+                " " +
+                this.backend
+            ); // sorry, too lazy to do i18n
+            showMessage(
+              "Document Tree Subfolder Plugin: Developer did not prepare for your device, please feedback the following information to the developer: " +
+                this.frontend +
+                " " +
+                this.backend
+            );
+            already_shown_the_incompatible_device_message = true;
+          }
+        }
+      });
     }, 100);
   }
 
@@ -309,6 +330,23 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           <path d="M3 14C3 9.02944 7.02944 5 12 5C16.9706 5 21 9.02944 21 14M17 14C17 16.7614 14.7614 19 12 19C9.23858 19 7 16.7614 7 14C7 11.2386 9.23858 9 12 9C14.7614 9 17 11.2386 17 14Z"></path>
           </symbol>
           `);
+
+    this.frontend = getFrontend();
+    this.backend = getBackend();
+    this.isPhone =
+      this.frontend === "mobile" || this.frontend === "browser-mobile";
+    this.isTablet =
+      ((this.frontend === "desktop" || this.frontend === "browser-desktop") &&
+        this.backend === "ios") ||
+      ((this.frontend === "desktop" || this.frontend === "browser-desktop") &&
+        this.backend === "android") ||
+      ((this.frontend === "desktop" || this.frontend === "browser-desktop") &&
+        this.backend === "docker");
+    this.isDesktop =
+      (this.frontend === "desktop" || this.frontend === "browser-desktop") &&
+      this.backend != "ios" &&
+      this.backend != "android" &&
+      this.backend != "docker";
   }
 
   private updateTopBarButtonStyles(
@@ -376,8 +414,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   }
 
   onLayoutReady() {
-    this.frontend = getFrontend();
-    this.backend = getBackend();
+    console.log(this.frontend, this.backend);
+    console.log(this.isPhone, this.isTablet, this.isDesktop);
     this.initListener();
     this.settingUtils.load();
 
