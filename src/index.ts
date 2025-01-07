@@ -16,12 +16,15 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private treatAsSubfolderIdSet: Set<string>;
   private treatAsSubfolderEmojiSet: Set<string>;
   private mode: DocTreeFakeSubfolderMode;
+  private to_normal_mode_count = 0;
+  //^ this is because when user enter the app, it not should display the "go to -ed normal mode noti",
+  //thus count and only display for 2nd times whatsoever
 
-  if_provided_id_in_treat_as_subfolder_set(id: string) {
+  ifProvidedIdInTreatAsSubfolderSet(id: string) {
     return this.treatAsSubfolderIdSet.has(id);
   }
 
-  if_provided_li_are_using_user_defined_identify_icon(li: HTMLElement) {
+  ifProvidedLiAreUsingUserDefinedIdentifyIcon(li: HTMLElement) {
     const iconElement = li.querySelector(".b3-list-item__icon");
     if (!iconElement) {
       return false;
@@ -35,15 +38,15 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     return this.treatAsSubfolderEmojiSet.has(iconText);
   }
 
-  append_id_to_treat_as_subfolder_set(id: string) {
+  appendIdToTreatAsSubfolderSet(id: string) {
     this.treatAsSubfolderIdSet.add(id);
   }
 
-  remove_id_from_treat_as_subfolder_set(id: string) {
+  removeIdFromTreatAsSubfolderSet(id: string) {
     this.treatAsSubfolderIdSet.delete(id);
   }
 
-  on_click_doctree_node(nodeId: string) {
+  onClickDoctreeNode(nodeId: string) {
     // dom
     const element = document.querySelector(`li[data-node-id="${nodeId}"]`);
     if (!element) {
@@ -70,7 +73,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     // }
   }
 
-  capture_to_set_unset_treat_as_subfolder_setting(nodeId: string) {
+  captureToSetUnsetTreatAsSubfolderSetting(nodeId: string) {
     // fetch setting
     const idsStr = this.settingUtils.get(
       "ids_that_should_be_treated_as_subfolder"
@@ -87,7 +90,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         `${this.i18n.recoveredThisDocumentFromSubfolder} ${nodeId}`,
         2000,
         "error"
-      ); //not err, just prettier
+      ); //not err, just prettier with this style
     } else {
       // add
       tempSet.add(nodeId);
@@ -106,7 +109,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     this.treatAsSubfolderIdSet = tempSet;
   }
 
-  init_listener() {
+  initListener() {
     console.log("init_listener");
     // wait for DOM loaded
     setTimeout(() => {
@@ -132,67 +135,63 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
 
             const listItem = e.target.closest(
               'li[data-type="navigation-file"]'
-            );
+            ) as HTMLElement | null;
 
-            if (listItem && !e.target.closest(".b3-list-item__action")) {
-              const nodeId = listItem.dataset.nodeId;
-              const path = listItem.dataset.path;
+            if (!listItem || e.target.closest(".b3-list-item__action")) {
+              return;
+            }
 
-              // console.log("---node:", listItem);
-              // console.log("---path:", path);
-              // console.log("---ID:", nodeId);
+            const nodeId = listItem.getAttribute("data-node-id");
+            const path = listItem.getAttribute("data-path");
 
-              try {
-                // check worker
-                if (
-                  this.mode == DocTreeFakeSubfolderMode.Normal &&
-                  nodeId &&
-                  ((this.settingUtils.get(
-                    "enable_using_emoji_as_subfolder_identify"
-                  ) &&
-                    this.if_provided_li_are_using_user_defined_identify_icon(
-                      listItem
-                    )) ||
-                    (this.settingUtils.get(
-                      "enable_using_id_as_subfolder_identify"
-                    ) &&
-                      this.if_provided_id_in_treat_as_subfolder_set(nodeId))) &&
-                  !e.target.closest(".b3-list-item__toggle") && // allow the toggle button
-                  !e.target.closest(".b3-list-item__icon") // allow the emoji icon
-                ) {
-                  console.log("---mode:", this.mode);
-                  // prevent
-                  e.preventDefault();
-                  e.stopPropagation();
+            try {
+              // the toggle aka > and icon should always be able to use whatsoever, this is make for them always cliable
+              const clickedToggle = e.target.closest(".b3-list-item__toggle");
+              const clickedIcon = e.target.closest(".b3-list-item__icon");
+              const isSpecialClick = clickedToggle || clickedIcon;
 
-                  // hijack
-                  if (listItem) {
-                    this.expand_subfolder(listItem);
-                  }
-
-                  return false;
-                } else if (
-                  this.mode == DocTreeFakeSubfolderMode.Capture &&
-                  !e.target.closest(".b3-list-item__toggle") &&
-                  !e.target.closest(".b3-list-item__icon") // these two still needs not to be able to reach the arrow and emoji icon
-                ) {
-                  this.capture_to_set_unset_treat_as_subfolder_setting(nodeId);
-                } else if (
-                  this.mode == DocTreeFakeSubfolderMode.Reveal &&
-                  !e.target.closest(".b3-list-item__toggle") &&
-                  !e.target.closest(".b3-list-item__icon") //same here
-                ) {
-                  //fallthrough
-                }
-
-                // allow original behavior
-                this.on_click_doctree_node(nodeId);
-              } catch (err) {
-                console.error(
-                  "error when handle document tree node click:",
-                  err
-                );
+              if (!nodeId || !this.mode) {
+                return;
               }
+
+              switch (this.mode) {
+                case DocTreeFakeSubfolderMode.Normal:
+                  if (
+                    !isSpecialClick &&
+                    ((this.settingUtils.get(
+                      "enable_using_emoji_as_subfolder_identify"
+                    ) &&
+                      this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(
+                        listItem
+                      )) ||
+                      (this.settingUtils.get(
+                        "enable_using_id_as_subfolder_identify"
+                      ) &&
+                        this.ifProvidedIdInTreatAsSubfolderSet(nodeId)))
+                  ) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.expandSubfolder(listItem);
+                    return false;
+                  }
+                  break;
+
+                case DocTreeFakeSubfolderMode.Capture:
+                  if (!isSpecialClick) {
+                    this.captureToSetUnsetTreatAsSubfolderSetting(
+                      nodeId
+                    );
+                  }
+                  break;
+
+                case DocTreeFakeSubfolderMode.Reveal:
+                  // fallthrough
+                  break;
+              }
+
+              this.onClickDoctreeNode(nodeId);
+            } catch (err) {
+              console.error("error when handle document tree node click:", err);
             }
           },
           true
@@ -201,7 +200,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     }, 100); // TODO: check if necessary
   }
 
-  expand_subfolder(item: HTMLElement) {
+  expandSubfolder(item: HTMLElement) {
     // console.log(item, "expand_subfolder");
     if (!item) {
       console.warn("not found li item, probably caused by theme or something");
@@ -308,8 +307,72 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           `);
   }
 
+  private updateTopBarButtonStyles(
+    activeMode: DocTreeFakeSubfolderMode,
+    buttons: {
+      normal: HTMLElement;
+      capture: HTMLElement;
+      reveal: HTMLElement;
+    }
+  ) {
+    const setButtonStyle = (button: HTMLElement, isActive: boolean) => {
+      button.style.backgroundColor = isActive
+        ? "var(--b3-toolbar-color)"
+        : "var(--b3-toolbar-background)";
+      button.style.color = isActive
+        ? "var(--b3-toolbar-background)"
+        : "var(--b3-toolbar-color)";
+    };
+
+    setButtonStyle(
+      buttons.normal,
+      activeMode === DocTreeFakeSubfolderMode.Normal
+    );
+    setButtonStyle(
+      buttons.capture,
+      activeMode === DocTreeFakeSubfolderMode.Capture
+    );
+    setButtonStyle(
+      buttons.reveal,
+      activeMode === DocTreeFakeSubfolderMode.Reveal
+    );
+  }
+
+  private switchMode(
+    mode: DocTreeFakeSubfolderMode,
+    buttons: {
+      normal: HTMLElement;
+      capture: HTMLElement;
+      reveal: HTMLElement;
+    }
+  ) {
+    this.to_normal_mode_count < 2 ? this.to_normal_mode_count++ : null;
+    this.mode = mode;
+    this.updateTopBarButtonStyles(mode, buttons);
+
+    const messages = {
+      [DocTreeFakeSubfolderMode.Normal]: {
+        text: this.i18n.enterNormalMode,
+        duration: 2000,
+      },
+      [DocTreeFakeSubfolderMode.Capture]: {
+        text: this.i18n.enterCaptureMode,
+        duration: 8000,
+      },
+      [DocTreeFakeSubfolderMode.Reveal]: {
+        text: this.i18n.enterRevealMode,
+        duration: 8000,
+      },
+    };
+
+    const { text, duration } = messages[mode];
+    if (this.to_normal_mode_count >= 2) {
+      showMessage(text, duration);
+    }
+  }
+
   onLayoutReady() {
-    this.init_listener();
+    this.initListener();
     this.settingUtils.load();
 
     // load emoji setting
@@ -318,89 +381,39 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     ) as string;
     this.treatAsSubfolderEmojiSet = this.stringToSet(emojisStr);
 
-    // console.log("---emojisStr", emojisStr);
-    // console.log("---this.treatAsSubfolderEmojiSet", this.treatAsSubfolderEmojiSet);
-
     // id
     const idsStr = this.settingUtils.get(
       "ids_that_should_be_treated_as_subfolder"
     ) as string;
     this.treatAsSubfolderIdSet = this.stringToSet(idsStr);
 
-    // console.log("---idsStr", idsStr);
-    // console.log("---this.treatAsSubfolderIdSet", this.treatAsSubfolderIdSet);
-    if (this.settingUtils.get("enable_mode_switch_buttons")) { // ya ummmmm this is the best that i can do within siyuan's api for plugins
-      const topBarElementDoctreeFakeSubfolderNormalMode = this.addTopBar({
-        icon: "iconDoctreeFakeSubfolderNormalMode",
-        title: this.i18n.normalMode,
-        position: "left",
-        callback: () => {
-          showMessage(this.i18n.enterNormalMode, 2000);
-          this.mode = DocTreeFakeSubfolderMode.Normal;
-          topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
-            "var(--b3-toolbar-color)";
-          topBarElementDoctreeFakeSubfolderNormalMode.style.color =
-            "var(--b3-toolbar-background)";
-          topBarElementDoctreeFakeSubfolderCaptureMode.style.backgroundColor =
-            "var(--b3-toolbar-background)";
-          topBarElementDoctreeFakeSubfolderCaptureMode.style.color =
-            "var(--b3-toolbar-color)";
-          topBarElementDoctreeFakeSubfolderRevealMode.style.backgroundColor =
-            "var(--b3-toolbar-background)";
-          topBarElementDoctreeFakeSubfolderRevealMode.style.color =
-            "var(--b3-toolbar-color)";
-        },
-      });
+    if (this.settingUtils.get("enable_mode_switch_buttons")) {
+      const buttons = {
+        normal: this.addTopBar({
+          icon: "iconDoctreeFakeSubfolderNormalMode",
+          title: this.i18n.normalMode,
+          position: "left",
+          callback: () =>
+            this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons),
+        }),
+        capture: this.addTopBar({
+          icon: "iconDoctreeFakeSubfolderCaptureMode",
+          title: this.i18n.captureMode,
+          position: "left",
+          callback: () =>
+            this.switchMode(DocTreeFakeSubfolderMode.Capture, buttons),
+        }),
+        reveal: this.addTopBar({
+          icon: "iconDoctreeFakeSubfolderRevealMode",
+          title: this.i18n.revealMode,
+          position: "left",
+          callback: () =>
+            this.switchMode(DocTreeFakeSubfolderMode.Reveal, buttons),
+        }),
+      };
 
-      const topBarElementDoctreeFakeSubfolderCaptureMode = this.addTopBar({
-        icon: "iconDoctreeFakeSubfolderCaptureMode",
-        title: this.i18n.captureMode,
-        position: "left",
-        callback: () => {
-          showMessage(this.i18n.enterCaptureMode, 8000);
-          this.mode = DocTreeFakeSubfolderMode.Capture;
-          topBarElementDoctreeFakeSubfolderCaptureMode.style.backgroundColor =
-            "var(--b3-toolbar-color)";
-          topBarElementDoctreeFakeSubfolderCaptureMode.style.color =
-            "var(--b3-toolbar-background)";
-          topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
-            "var(--b3-toolbar-background)";
-          topBarElementDoctreeFakeSubfolderNormalMode.style.color =
-            "var(--b3-toolbar-color)";
-          topBarElementDoctreeFakeSubfolderRevealMode.style.backgroundColor =
-            "var(--b3-toolbar-background)";
-          topBarElementDoctreeFakeSubfolderRevealMode.style.color =
-            "var(--b3-toolbar-color)";
-        },
-      });
-
-      const topBarElementDoctreeFakeSubfolderRevealMode = this.addTopBar({
-        icon: "iconDoctreeFakeSubfolderRevealMode",
-        title: this.i18n.revealMode,
-        position: "left",
-        callback: () => {
-          showMessage(this.i18n.enterRevealMode, 8000);
-          this.mode = DocTreeFakeSubfolderMode.Reveal;
-          topBarElementDoctreeFakeSubfolderRevealMode.style.backgroundColor =
-            "var(--b3-toolbar-color)";
-          topBarElementDoctreeFakeSubfolderRevealMode.style.color =
-            "var(--b3-toolbar-background)";
-          topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
-            "var(--b3-toolbar-background)";
-          topBarElementDoctreeFakeSubfolderNormalMode.style.color =
-            "var(--b3-toolbar-color)";
-          topBarElementDoctreeFakeSubfolderCaptureMode.style.backgroundColor =
-            "var(--b3-toolbar-background)";
-          topBarElementDoctreeFakeSubfolderCaptureMode.style.color =
-            "var(--b3-toolbar-color)";
-        },
-      });
-
-      this.mode = DocTreeFakeSubfolderMode.Normal;
-      topBarElementDoctreeFakeSubfolderNormalMode.style.backgroundColor =
-        "var(--b3-toolbar-color)";
-      topBarElementDoctreeFakeSubfolderNormalMode.style.color =
-        "var(--b3-toolbar-background)";
+      // default to normal mode
+      this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons);
     }
   }
 
