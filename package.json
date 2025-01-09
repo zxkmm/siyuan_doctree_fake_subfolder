@@ -1,6 +1,6 @@
 {
   "name": "siyuan_doctree_fake_subfolder",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "description": "Provide capabilities to create nested folders in doctree",
   "repository": "",
