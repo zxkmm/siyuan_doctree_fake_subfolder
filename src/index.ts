@@ -15,7 +15,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private settingUtils: SettingUtils;
   private treatAsSubfolderIdSet: Set<string>;
   private treatAsSubfolderEmojiSet: Set<string>;
-  private mode: DocTreeFakeSubfolderMode;
+  private mode: DocTreeFakeSubfolderMode = DocTreeFakeSubfolderMode.Normal;
   private to_normal_mode_count = 0;
   //^ this is because when user enter the app, it not should display the "go to -ed normal mode noti",
   //thus count and only display for 2nd times whatsoever
@@ -207,7 +207,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         } else {
           if (!already_shown_the_incompatible_device_message) {
             showMessage(
-              "文档树子文件夹插件：开发者没有为您的设备做准备，清将如下信息反馈给开发者：" +
+              "文档树子文件夹插件：开发者没有为您的设备做准备，清将如下信息和你的设备型号反馈给开发者：" +
                 this.frontend +
                 " " +
                 this.backend
