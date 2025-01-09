@@ -2,6 +2,7 @@ import { Plugin, getFrontend, getBackend, showMessage } from "siyuan";
 import "@/index.scss";
 
 import { SettingUtils } from "./libs/setting-utils";
+import { getChildBlocks } from "./api";
 
 const STORAGE_NAME = "menu-config";
 
@@ -114,8 +115,34 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     this.treatAsSubfolderIdSet = tempSet;
   }
 
+  /**
+   * @param id
+   * @returns: true if document has content, false if empty
+   *
+   * NB: the markdown child is exist, and I already checked all the widget type, it works fine,
+   * e.g. if the firsat block is a database widget, it will return html so it's all good
+   */
+  async ifDocumentHasContent(id: string): Promise<boolean> {
+    const maxGoThroughCount = 3;
+    const childBlocks = await getChildBlocks(id);
+    let goThroughCount = 0;
+
+    for (let i = 0; i < childBlocks.length; i++) {
+      if (childBlocks[i].markdown !== undefined) {
+        return true;
+      }
+      goThroughCount++;
+      if (goThroughCount >= maxGoThroughCount) {
+        console.log("too many empty blocks, treated as empty");
+        break;
+      }
+    }
+
+    return false;
+  }
+
   initListener() {
-    console.log("init_listener");
+    // console.log("init_listener");
     // wait dom
     setTimeout(() => {
       const elements = document.querySelectorAll(".b3-list--background");
@@ -127,7 +154,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       }
 
       // event handler
-      const handleEvent = (e: MouseEvent | TouchEvent) => {
+      const handleEvent = async (e: MouseEvent | TouchEvent) => {
         if (!e.target || !(e.target instanceof Element)) {
           console.warn(
             "event target is invalid, probably caused by theme or something"
@@ -151,27 +178,40 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           const clickedIcon = e.target.closest(".b3-list-item__icon");
           const isSpecialClick = clickedToggle || clickedIcon;
 
+          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          // NB: this special click is VERY IMPORTANT, that it not only prevent it response user's clikc as "expand",
+          // BUT ALSO if prevent loop calling because we simulated click the arrow and triggered this again!!!!!!!!!!
+          // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          // console.log(isSpecialClick, "isSpecialClick");
+
           if (!nodeId || !this.mode) {
             return;
           }
 
           switch (this.mode) {
             case DocTreeFakeSubfolderMode.Normal:
-              if (
-                !isSpecialClick &&
-                ((this.settingUtils.get(
-                  "enable_using_emoji_as_subfolder_identify"
-                ) &&
-                  this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(listItem)) ||
-                  (this.settingUtils.get(
-                    "enable_using_id_as_subfolder_identify"
+              if (!isSpecialClick) {
+                const hasContent = await this.ifDocumentHasContent(nodeId);
+                const useEmoji =
+                  this.settingUtils.get(
+                    "enable_using_emoji_as_subfolder_identify"
                   ) &&
-                    this.ifProvidedIdInTreatAsSubfolderSet(nodeId)))
-              ) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.expandSubfolder(listItem);
-                return false;
+                  this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(listItem);
+                const useId =
+                  this.settingUtils.get(
+                    "enable_using_id_as_subfolder_identify"
+                  ) && this.ifProvidedIdInTreatAsSubfolderSet(nodeId);
+                const useAutoExpand =
+                  this.settingUtils.get("enable_auto_expand_subfolder") &&
+                  !hasContent;
+
+                if (useEmoji || useId || useAutoExpand) {
+                  // console.log("expandSubfolder");
+                  e.preventDefault();
+                  e.stopPropagation();
+                  this.expandSubfolder(listItem);
+                  return false;
+                }
               }
               break;
 
@@ -192,7 +232,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         }
       };
 
-      var already_shown_the_incompatible_device_message = false;
+      let already_shown_the_incompatible_device_message = false;
 
       // add listener
       elements.forEach((element) => {
@@ -288,6 +328,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       type: "textarea",
       title: this.i18n.idsThatShouldBeTreatedAsSubfolder,
       description: this.i18n.idsThatShouldBeTreatedAsSubfolderDesc,
+    });
+    this.settingUtils.addItem({
+      key: "enable_auto_expand_subfolder",
+      value: true,
+      type: "checkbox",
+      title: this.i18n.enableAutoExpandSubfolder,
+      description: this.i18n.enableAutoExpandSubfolderDesc,
     });
     this.settingUtils.addItem({
       key: "enable_mode_switch_buttons",
@@ -414,8 +461,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   }
 
   onLayoutReady() {
-    console.log(this.frontend, this.backend);
-    console.log(this.isPhone, this.isTablet, this.isDesktop);
+    // console.log(this.frontend, this.backend);
+    // console.log(this.isPhone, this.isTablet, this.isDesktop);
     this.initListener();
     this.settingUtils.load();
 

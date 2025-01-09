@@ -10,6 +10,8 @@
     "revealMode": "Document tree subfolder plugin: Reveal mode",
     "enableModeSwitchButtons": "Enable mode switch buttons",
     "enableModeSwitchButtonsDesc": "When enabled, mode switch buttons will be displayed at the top of the document tree, which can be used to switch between normal mode, capture mode and reveal mode",
+    "enableAutoExpandSubfolder": "Enable auto expand subfolder",
+    "enableAutoExpandSubfolderDesc": "When enabled, clicking on a document will automatically expand it if it is a subfolder. Note that this may have performance overhead on low-end devices.",
 
     "enableUsingEmojiAsSubfolderIdentify": "Enable using emoji as subfolder identify",
     "enableUsingEmojiAsSubfolderIdentifyDesc": "When enabled, selected emoji will be used as subfolder identify, that those documents that contains these emoji will be treated as subfolder",

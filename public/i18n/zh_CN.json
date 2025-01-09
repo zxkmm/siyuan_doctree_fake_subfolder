@@ -9,6 +9,8 @@
     "revealMode": "文档树子文档插件：揭露模式",
     "enableModeSwitchButtons": "启用模式切换按钮",
     "enableModeSwitchButtonsDesc": "启用后，在文档树上方会显示模式切换按钮，可以方便切换普通模式/捕获模式/揭露模式",
+    "enableAutoExpandSubfolder": "启用自动展开子文件夹",
+    "enableAutoExpandSubfolderDesc": "启用后，点击文档时，如果这个文档是空的，则作为子文件夹对待。低配设备请注意性能开销",
 
 
 
