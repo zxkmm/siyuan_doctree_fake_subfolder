@@ -152,9 +152,9 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     this.treatAsSubfolderIdSet = tempSet;
   }
 
-  initListener() {
+  private initListener() {
     console.log("init_listener");
-    // wait dom
+    // 等待 DOM
     setTimeout(() => {
       const elements = document.querySelectorAll(".b3-list--background");
       if (elements.length === 0) {
@@ -164,8 +164,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         return;
       }
 
-      // event handler
-      const handleEvent = (e: MouseEvent | TouchEvent) => {
+      // NB: this lambda is aysnc
+      const handleEvent = async (e: MouseEvent | TouchEvent) => {
+        // this ev were added in later code and this is for checking
+        if ((e as any).sf_openDoc) {
+          return;
+        }
+
         if (!e.target || !(e.target instanceof Element)) {
           console.warn(
             "event target is invalid, probably caused by theme or something"
@@ -176,9 +181,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         const listItem = e.target.closest(
           'li[data-type="navigation-file"]'
         ) as HTMLElement | null;
-
         if (!listItem || e.target.closest(".b3-list-item__action")) {
-          return;
+          return; // handle allow clicked emoji/more/etc
         }
 
         const nodeId = listItem.getAttribute("data-node-id");
@@ -187,7 +191,11 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         try {
           const clickedToggle = e.target.closest(".b3-list-item__toggle");
           const clickedIcon = e.target.closest(".b3-list-item__icon");
-          const isSpecialClick = clickedToggle || clickedIcon;
+          // TODO: this probably already not needed anymore, 
+          //cuz toggle were already protected previously and emoji also protected earlier, 
+          //but leave as is for now
+          const isSpecialClick = !!(clickedToggle || clickedIcon);
+          /*                     ^ cast to bool */
 
           if (!nodeId || !this.mode) {
             return;
@@ -195,53 +203,84 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
 
           switch (this.mode) {
             case DocTreeFakeSubfolderMode.Normal:
-              if (
-                !isSpecialClick &&
-                ((this.settingUtils.get(
+              if (!isSpecialClick) {
+                // cache settings in case if more chaotic
+                const enableEmoji = this.settingUtils.get(
                   "enable_using_emoji_as_subfolder_identify"
-                ) &&
-                  this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(listItem)) ||
-                  (this.settingUtils.get(
-                    "enable_using_id_as_subfolder_identify"
-                  ) &&
-                    this.ifProvidedIdInTreatAsSubfolderSet(nodeId)))
-              ) {
-                e.preventDefault();
-                e.stopPropagation();
-                this.expandSubfolder(listItem);
-                return false;
+                );
+                const enableId = this.settingUtils.get(
+                  "enable_using_id_as_subfolder_identify"
+                );
+
+                // emoji and id in list
+                const isByEmoji =
+                  enableEmoji &&
+                  this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(listItem);
+                const isById =
+                  enableId && this.ifProvidedIdInTreatAsSubfolderSet(nodeId);
+
+                if (isByEmoji || isById) {
+                  // Treat as folder
+                  e.preventDefault();
+                  e.stopPropagation();
+                  this.expandSubfolder(listItem);
+                  return false; // shouldn't waiste it of gone here
+                } else {
+                  // empty check here
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const isEmpty = await this.isProvidedIdIsEmptyDocument(nodeId);
+                  if (isEmpty) {
+                    // empty
+                    this.expandSubfolder(listItem);
+                    return false;
+                  } else {
+                    // not empty
+                    const newEvent = new MouseEvent("click", {
+                      bubbles: true,
+                      cancelable: true,
+                    });
+                    Object.defineProperty(newEvent, "sf_openDoc", { // add trigger ev to indicate if its a manual trigger
+                      value: true,
+                    });
+                    listItem.dispatchEvent(newEvent);
+                    return false;
+                  }
+                }
               }
+              // toggle click: always fallthrough is good enough
               break;
 
             case DocTreeFakeSubfolderMode.Capture:
               if (!isSpecialClick) {
+                // capture worker
                 this.captureToSetUnsetTreatAsSubfolderSetting(nodeId);
               }
               break;
 
             case DocTreeFakeSubfolderMode.Reveal:
-              // fallthrough
               break;
           }
 
+          // fallback
           this.onClickDoctreeNode(nodeId);
         } catch (err) {
           console.error("error when handle document tree node click:", err);
         }
       };
 
-      var already_shown_the_incompatible_device_message = false;
+      let already_shown_the_incompatible_device_message = false;
 
-      // add listener
+
+      // TODO: this part were written by chatGPT, need to go back and check what exactly changed, but worked anyway
+      // 监听事件时，不使用事件捕获阶段（第三个参数为 false 或省略）
+      // 这样可以让思源自身的展开折叠逻辑正常执行
       elements.forEach((element) => {
         if (this.isDesktop) {
-          // click
-          element.addEventListener("click", handleEvent, true);
-          // touch
-          element.addEventListener("touchend", handleEvent, true);
+          element.addEventListener("click", handleEvent);
+          element.addEventListener("touchend", handleEvent);
         } else if (this.isPhone || this.isTablet) {
-          // click
-          element.addEventListener("click", handleEvent, true);
+          element.addEventListener("click", handleEvent);
         } else {
           if (!already_shown_the_incompatible_device_message) {
             showMessage(
@@ -249,7 +288,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                 this.frontend +
                 " " +
                 this.backend
-            ); // sorry, too lazy to do i18n
+            );
             showMessage(
               "Document Tree Subfolder Plugin: Developer did not prepare for your device, please feedback the following information to the developer: " +
                 this.frontend +
