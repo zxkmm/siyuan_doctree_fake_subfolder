@@ -191,8 +191,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         try {
           const clickedToggle = e.target.closest(".b3-list-item__toggle");
           const clickedIcon = e.target.closest(".b3-list-item__icon");
-          // TODO: this probably already not needed anymore, 
-          //cuz toggle were already protected previously and emoji also protected earlier, 
+          // TODO: this probably already not needed anymore,
+          //cuz toggle were already protected previously and emoji also protected earlier,
           //but leave as is for now
           const isSpecialClick = !!(clickedToggle || clickedIcon);
           /*                     ^ cast to bool */
@@ -211,6 +211,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                 const enableId = this.settingUtils.get(
                   "enable_using_id_as_subfolder_identify"
                 );
+                const enableAuto = this.settingUtils.get("enable_auto_mode");
 
                 // emoji and id in list
                 const isByEmoji =
@@ -229,8 +230,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                   // empty check here
                   e.preventDefault();
                   e.stopPropagation();
-                  const isEmpty = await this.isProvidedIdIsEmptyDocument(nodeId);
-                  if (isEmpty) {
+
+                  
+                  const isEmpty = await this.isProvidedIdIsEmptyDocument(
+                    nodeId
+                  ); 
+                  //TODO: it still look up db table even if auto mode disabled. Currently need it and it's not that lagging. will fix it later
+                  if (isEmpty && enableAuto) {
                     // empty
                     this.expandSubfolder(listItem);
                     return false;
@@ -240,7 +246,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                       bubbles: true,
                       cancelable: true,
                     });
-                    Object.defineProperty(newEvent, "sf_openDoc", { // add trigger ev to indicate if its a manual trigger
+                    Object.defineProperty(newEvent, "sf_openDoc", {
+                      // add trigger ev to indicate if its a manual trigger
                       value: true,
                     });
                     listItem.dispatchEvent(newEvent);
@@ -270,7 +277,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       };
 
       let already_shown_the_incompatible_device_message = false;
-
 
       // TODO: this part were written by chatGPT, need to go back and check what exactly changed, but worked anyway
       // 监听事件时，不使用事件捕获阶段（第三个参数为 false 或省略）
@@ -337,6 +343,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     this.settingUtils = new SettingUtils({
       plugin: this,
       name: STORAGE_NAME,
+    });
+    this.settingUtils.addItem({
+      key: "enable_auto_mode",
+      value: true,
+      type: "checkbox",
+      title: this.i18n.enableAutoMode,
+      description: this.i18n.enableAutoModeDesc,
     });
     this.settingUtils.addItem({
       key: "enable_using_emoji_as_subfolder_identify",

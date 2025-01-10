@@ -19,6 +19,8 @@
     "enableUsingIdAsSubfolderIdentifyDesc": "When enabled, selected id will be used as subfolder identify, that those documents that contains these id will be treated as subfolder",
     "idsThatShouldBeTreatedAsSubfolder": "Ids that should be treated as subfolder",
     "idsThatShouldBeTreatedAsSubfolderDesc": "seperate by comma",
+    "enableAutoMode": "Enable auto mode",
+    "enableAutoModeDesc": "When enabled, the plugin will automatically determine if the document is empty, and if it is, it will automatically treat the document as a subfolder. Please note: this mode is not 'capture mode', it will not add documents that meet the conditions to the 'subfolder' list, but will judge each time",
     "hintTitle":"About",
     "hintDesc":"<a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>siyuan_doctree_fake_subfolder</a><br>AGLP3.0 License<br>💻 @zxkmm"
 }
