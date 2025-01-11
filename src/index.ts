@@ -25,6 +25,16 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private isPhone: boolean;
   private isTablet: boolean;
 
+  private async isProvidedIdHasSubDocument(element: HTMLElement): Promise<boolean> {
+    const toggleElement = element.querySelector('.b3-list-item__toggle');
+    if (!toggleElement) {
+        return false;
+    }
+    
+    // 如果toggle按钮有fn__hidden类，说明没有子文档
+    return !toggleElement.classList.contains('fn__hidden');
+  }
+
   private async isProvidedIdIsEmptyDocument(id: string): Promise<boolean> {
     // sql code was written by wilsons
     // https://ld246.com/article/1736401552973
@@ -40,7 +50,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
 
     try {
       const result = await sql(sqlScript);
-      console.log(result, "result");
+      // console.log(result, "result");
       // first result
       const count = result[0]?.count || 0;
       // if count is 0, the document is empty
@@ -235,8 +245,12 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                   const isEmpty = await this.isProvidedIdIsEmptyDocument(
                     nodeId
                   ); 
+                  const hasSubDocument = await this.isProvidedIdHasSubDocument(
+                    listItem
+                  );
+                  console.log(isEmpty, hasSubDocument, "isEmpty, hasSubDocument");
                   //TODO: it still look up db table even if auto mode disabled. Currently need it and it's not that lagging. will fix it later
-                  if (isEmpty && enableAuto) {
+                  if (isEmpty && hasSubDocument && enableAuto) {
                     // empty
                     this.expandSubfolder(listItem);
                     return false;

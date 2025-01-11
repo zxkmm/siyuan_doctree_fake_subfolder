@@ -20,7 +20,7 @@
     "idsThatShouldBeTreatedAsSubfolder": "应该被视为子文件夹的文档的 id",
     "idsThatShouldBeTreatedAsSubfolderDesc": "中英文逗号分割，空格和空行不影响",
     "enableAutoMode": "启用全自动模式",
-    "enableAutoModeDesc": "启用后，插件会自动识别文档是否为空，如果为空，则自动将文档视为子文件夹。请注意：此模式不是“捕获模式”， 不会把符合条件的文档加入“视为子文件夹”列表， 而是每次都进行判断",
+    "enableAutoModeDesc": "启用后，插件会自动识别文档是否为空，如果为空而且它有子文档，则自动将文档视为子文件夹。请注意：此模式不是“捕获模式”， 不会把符合条件的文档加入“视为子文件夹”列表， 而是每次都进行判断",
     "hintTitle": "关于",
     "hintDesc": "<a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>🔗 siyuan_doctree_fake_subfolder</a><br>AGLP3.0 协议开源<br>💻 @zxkmm"
 }
