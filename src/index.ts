@@ -1,6 +1,6 @@
 import { Plugin, getFrontend, getBackend, showMessage } from "siyuan";
 import "@/index.scss";
-import { sql } from "./api";
+import { request, sql } from "./api";
 import { SettingUtils } from "./libs/setting-utils";
 
 const STORAGE_NAME = "menu-config";
@@ -25,41 +25,36 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private isPhone: boolean;
   private isTablet: boolean;
 
+
+/*
+ * @description: if toggle button has fn__hidden class, it means there is no sub document
+ * @return: has subfolder: true, no dubfolder: false
+ */
   private async isProvidedIdHasSubDocument(element: HTMLElement): Promise<boolean> {
     const toggleElement = element.querySelector('.b3-list-item__toggle');
     if (!toggleElement) {
         return false;
     }
     
-    // 如果toggle按钮有fn__hidden类，说明没有子文档
     return !toggleElement.classList.contains('fn__hidden');
   }
 
+
+  /*
+   * @description: return if the document is empty
+   * @return: empty: true, not empty: false
+   * 
+   * this APi were found by wilsons
+   * Thanks!
+   */
   private async isProvidedIdIsEmptyDocument(id: string): Promise<boolean> {
-    // sql code was written by wilsons
-    // https://ld246.com/article/1736401552973
-    // Thanks!
-
-    const sqlScript = `
-        SELECT count(*) as count 
-        FROM blocks 
-        WHERE root_id = '${id}' 
-        AND type != 'd' 
-        AND markdown != ''
-    `;
-
-    try {
-      const result = await sql(sqlScript);
-      // console.log(result, "result");
-      // first result
-      const count = result[0]?.count || 0;
-      // if count is 0, the document is empty
-      console.log("is??", count === 0);
-      return count === 0;
-    } catch (error) {
-      console.error("Error when checking if the document is empty:", error);
-      return false;
-    }
+      let data = {
+        id: id
+    };
+    let url = '/api/block/getTreeStat';
+    const res = await request(url, data);
+    console.log(res, "res");
+    return res.stat.runeCount === 0;
   }
 
   // unit test
