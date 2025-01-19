@@ -555,6 +555,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         }),
       };
 
+      const ifShowCaptureModeButton = this.settingUtils.get("enable_auto_mode") &&
+       !this.settingUtils.get("enable_using_id_as_subfolder_identify");
+
+      if(ifShowCaptureModeButton){
+        buttons.capture.style.display = "none";
+      }
+
       // default to normal mode
       this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons);
     }
