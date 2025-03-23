@@ -3,6 +3,8 @@ import "@/index.scss";
 import { request, sql } from "./api";
 import { SettingUtils } from "./libs/setting-utils";
 
+import { stringToSet } from "./helpers";
+
 const STORAGE_NAME = "menu-config";
 
 enum DocTreeFakeSubfolderMode {
@@ -128,7 +130,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     ) as string;
 
     // into temp set
-    const tempSet = this.stringToSet(idsStr);
+    const tempSet = stringToSet(idsStr);
 
     // worker
     if (tempSet.has(nodeId)) {
@@ -354,6 +356,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       name: STORAGE_NAME,
     });
     this.settingUtils.addItem({
+      key: "begging",
+      value: "",
+      type: "hint",
+      title: this.i18n.beggingTitle,
+      description: this.i18n.beggingDesc,
+    });
+    this.settingUtils.addItem({
       key: "enable_auto_mode",
       value: true,
       type: "checkbox",
@@ -522,13 +531,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     const emojisStr = this.settingUtils.get(
       "emojies_that_should_be_treated_as_subfolder"
     ) as string;
-    this.treatAsSubfolderEmojiSet = this.stringToSet(emojisStr);
+    this.treatAsSubfolderEmojiSet = stringToSet(emojisStr);
 
     // id
     const idsStr = this.settingUtils.get(
       "ids_that_should_be_treated_as_subfolder"
     ) as string;
-    this.treatAsSubfolderIdSet = this.stringToSet(idsStr);
+    this.treatAsSubfolderIdSet = stringToSet(idsStr);
 
     if (this.settingUtils.get("enable_mode_switch_buttons")) {
       const buttons = {
@@ -570,19 +579,4 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   async onunload() {}
 
   uninstall() {}
-
-  /* ----------------v helpers ---------------- */
-  private stringToSet(str: string): Set<string> {
-    if (!str) {
-      return new Set();
-    }
-    return new Set(
-      str
-        .split(/[,，]/)
-        .map((item) => item.trim()) // remove space
-        .filter((item) => item.length > 0) // remove empty string
-    );
-  }
-
-  /* ----------------^ helpers ---------------- */
 }

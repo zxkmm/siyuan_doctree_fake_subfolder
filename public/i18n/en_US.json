@@ -22,5 +22,9 @@
     "enableAutoMode": "Enable auto mode",
     "enableAutoModeDesc": "When enabled, the plugin will automatically determine if the document is empty, and if it is and also it has sub document(s), it will automatically treat the document as a subfolder. Please note: this mode is not 'capture mode', it will not add documents that meet the conditions to the 'subfolder' list, but will judge each time",
     "hintTitle":"About",
-    "hintDesc":"<a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>siyuan_doctree_fake_subfolder</a><br>AGLP3.0 License<br>💻 @zxkmm"
+    "hintDesc":"<a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>siyuan_doctree_fake_subfolder</a><br>AGLP3.0 License<br>💻 @zxkmm",
+
+    "beggingTitle": "🙏 Begging 🙏",
+    "beggingDesc": "This plugin is open source and free, so I need your encouragement.<br>If you like the features this plugin brings you, you can consider donating to help me with basic living expenses 🍚: <a href='https://pipe.b3log.org/blogs/zxkmm/articles/2025/02/08/1738993480704'>Donate</a>. (Donations won't unlock additional features)<br>If you're not financially comfortable, you can encourage me by giving a free ⭐ star to <a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>my GitHub repository</a>.<br>If you or someone you know needs my skills, feel free to hire me anytime.",
+  
 }
