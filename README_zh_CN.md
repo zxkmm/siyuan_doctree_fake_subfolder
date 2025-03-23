@@ -13,5 +13,9 @@
  - 设置项中填入文档ID，则这个文档会被视为是子笔记本，你可以点击展开，点击不会进入文档（但你的数据不会丢失）
 
 # 致谢
+## 捐助者 (如果您无意匿名，请发issue解除匿名)
+- 匿名 先生/女士
+
+## Contributors
 - [wilsons](https://ld246.com/member/wilsons) : 在设计全自动模式时候帮我写 SQL 和找到 getTreeStat API。谢谢！
 - [OpaqueGlass](https://github.com/OpaqueGlass) : 虽然这个插件没有使用OpaqueGlass的确切代码，但我或多或少从OpaqueGlass的[syplugin-doubleClickFileTree](https://github.com/OpaqueGlass/syplugin-doubleClickFileTree)项目中得到过灵感，因为我在写这个插件之前就读了ta的代码。谢谢！
