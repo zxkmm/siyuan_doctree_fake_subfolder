@@ -15,6 +15,8 @@
 # 致谢
 ## 捐助者 (如果您无意匿名，请发issue解除匿名)
 - 匿名 先生/女士
+## 贡献者
+- [ioxenus](https://github.com/ioxenus)
 
 ## Contributors
 - [wilsons](https://ld246.com/member/wilsons) : 在设计全自动模式时候帮我写 SQL 和找到 getTreeStat API。谢谢！

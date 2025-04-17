@@ -9,7 +9,11 @@ This plugin is protected by AGLP 3.0 license
 
 # Credit
 ## Donator (Leave an issue here if you didn't meant to be anonymous)
-- Mr / Mrs. anonymous 
+- Mr / Mrs. anonymous
+
+## Contributous
+- [ioxenus](https://github.com/ioxenus)
+
 
 ## Contributors
 - [wilsons](https://ld246.com/member/wilsons) : Written SQL and found getTreeStat API in designing the fully automated mode. Thank you!
