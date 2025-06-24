@@ -56,7 +56,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     let url = '/api/block/getTreeStat';
     const res = await request(url, data);
     console.log(res, "res");
-    // 安全访问 + 兼容不同API版本
+    // 兼容不同API版本
     const runeCount = res.runeCount ?? res.stat?.runeCount;
     return runeCount === 0;
   }
