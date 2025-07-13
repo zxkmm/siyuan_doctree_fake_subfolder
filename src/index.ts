@@ -28,16 +28,16 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private isTablet: boolean;
 
 
-/*
- * @description: if toggle button has fn__hidden class, it means there is no sub document
- * @return: has subfolder: true, no dubfolder: false
- */
+  /*
+   * @description: if toggle button has fn__hidden class, it means there is no sub document
+   * @return: has subfolder: true, no dubfolder: false
+   */
   private async isProvidedIdHasSubDocument(element: HTMLElement): Promise<boolean> {
     const toggleElement = element.querySelector('.b3-list-item__toggle');
     if (!toggleElement) {
-        return false;
+      return false;
     }
-    
+
     return !toggleElement.classList.contains('fn__hidden');
   }
 
@@ -50,8 +50,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
    * Thanks!
    */
   private async isProvidedIdIsEmptyDocument(id: string): Promise<boolean> {
-      let data = {
-        id: id
+    let data = {
+      id: id
     };
     let url = '/api/block/getTreeStat';
     const res = await request(url, data);
@@ -240,10 +240,10 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                   e.preventDefault();
                   e.stopPropagation();
 
-                  
+
                   const isEmpty = await this.isProvidedIdIsEmptyDocument(
                     nodeId
-                  ); 
+                  );
                   const hasSubDocument = await this.isProvidedIdHasSubDocument(
                     listItem
                   );
@@ -304,15 +304,15 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           if (!already_shown_the_incompatible_device_message) {
             showMessage(
               "文档树子文件夹插件：开发者没有为您的设备做准备，清将如下信息和你的设备型号反馈给开发者：" +
-                this.frontend +
-                " " +
-                this.backend
+              this.frontend +
+              " " +
+              this.backend
             );
             showMessage(
               "Document Tree Subfolder Plugin: Developer did not prepare for your device, please feedback the following information to the developer: " +
-                this.frontend +
-                " " +
-                this.backend
+              this.frontend +
+              " " +
+              this.backend
             );
             already_shown_the_incompatible_device_message = true;
           }
@@ -453,7 +453,9 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       ((this.frontend === "desktop" || this.frontend === "browser-desktop") &&
         this.backend === "docker");
     this.isDesktop =
-      (this.frontend === "desktop" || this.frontend === "browser-desktop") &&
+      (this.frontend === "desktop" ||
+        this.frontend === "browser-desktop" ||
+        this.frontend === "desktop-window") &&
       this.backend != "ios" &&
       this.backend != "android" &&
       this.backend != "docker";
@@ -567,9 +569,9 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       };
 
       const ifShowCaptureModeButton = this.settingUtils.get("enable_auto_mode") &&
-       !this.settingUtils.get("enable_using_id_as_subfolder_identify");
+        !this.settingUtils.get("enable_using_id_as_subfolder_identify");
 
-      if(ifShowCaptureModeButton){
+      if (ifShowCaptureModeButton) {
         buttons.capture.style.display = "none";
       }
 
@@ -578,7 +580,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     }
   }
 
-  async onunload() {}
+  async onunload() { }
 
-  uninstall() {}
+  uninstall() { }
 }
