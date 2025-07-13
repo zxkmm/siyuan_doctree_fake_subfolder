@@ -13,8 +13,6 @@ This plugin is protected by AGLP 3.0 license
 
 ## Contributous
 - [ioxenus](https://github.com/ioxenus)
-
-
-## Contributors
+- [itljsj](https://github.com/tljsj)
 - [wilsons](https://ld246.com/member/wilsons) : Written SQL and found getTreeStat API in designing the fully automated mode. Thank you!
 - [OpaqueGlass](https://github.com/OpaqueGlass) : Although this plugin does not use OpaqueGlass’s exact code, I have more or less been inspired by OpaqueGlass’s [syplugin-doubleClickFileTree](https://github.com/OpaqueGlass/syplugin-doubleClickFileTree) project, as I read their code before writing this plugin. Thank you!

@@ -17,7 +17,6 @@
 - 匿名 先生/女士
 ## 贡献者
 - [ioxenus](https://github.com/ioxenus)
-
-## Contributors
+- [itljsj](https://github.com/tljsj) : 修复Docker兼容问题
 - [wilsons](https://ld246.com/member/wilsons) : 在设计全自动模式时候帮我写 SQL 和找到 getTreeStat API。谢谢！
 - [OpaqueGlass](https://github.com/OpaqueGlass) : 虽然这个插件没有使用OpaqueGlass的确切代码，但我或多或少从OpaqueGlass的[syplugin-doubleClickFileTree](https://github.com/OpaqueGlass/syplugin-doubleClickFileTree)项目中得到过灵感，因为我在写这个插件之前就读了ta的代码。谢谢！

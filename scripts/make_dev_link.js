@@ -10,7 +10,7 @@
 import fs from 'fs';
 import { log, error, getSiYuanDir, chooseTarget, getThisPluginName, makeSymbolicLink } from './utils.js';
 
-let targetDir = '/home/zxkmm/Documents/siyuan_dev/data/plugins';
+let targetDir = '/Volumes/kioxia/documents/siyuan_dev/data/plugins';
 
 /**
  * 1. Get the parent directory to install the plugin
