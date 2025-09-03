@@ -173,11 +173,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         return;
       }
 
-      // Debounce mechanism to prevent duplicate events on mobile
-      let lastEventTime = 0;
-      let lastEventTarget: Element | null = null;
-      const DEBOUNCE_DELAY = 100; // ms
-
       // NB: this lambda is aysnc
       const handleEvent = async (e: MouseEvent | TouchEvent) => {
         // this ev were added in later code and this is for checking
@@ -191,14 +186,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           );
           return;
         }
-
-        // Debounce to prevent duplicate events (click + touchend on mobile)
-        const currentTime = Date.now();
-        if (currentTime - lastEventTime < DEBOUNCE_DELAY && lastEventTarget === e.target) {
-          return;
-        }
-        lastEventTime = currentTime;
-        lastEventTarget = e.target;
 
         const listItem = e.target.closest(
           'li[data-type="navigation-file"]'
@@ -253,31 +240,25 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                   e.preventDefault();
                   e.stopPropagation();
 
-                  // Perform async operations in parallel to reduce latency
-                  const [isEmpty, hasSubDocument] = await Promise.all([
-                    this.isProvidedIdIsEmptyDocument(nodeId),
-                    this.isProvidedIdHasSubDocument(listItem)
-                  ]);
-                  
+
+                  const isEmpty = await this.isProvidedIdIsEmptyDocument(
+                    nodeId
+                  );
+                  const hasSubDocument = await this.isProvidedIdHasSubDocument(
+                    listItem
+                  );
                   console.log(isEmpty, hasSubDocument, "isEmpty, hasSubDocument");
                   //TODO: it still look up db table even if auto mode disabled. Currently need it and it's not that lagging. will fix it later
                   if (isEmpty && hasSubDocument && enableAuto) {
-                    // empty - expand as subfolder
+                    // empty
                     this.expandSubfolder(listItem);
                     return false;
                   } else {
-                    // not empty - open document normally
-                    // Use appropriate event type based on device
-                    const eventType = (this.isPhone || this.isTablet) && e.type === 'touchend' ? 'touchend' : 'click';
-                    const newEvent = eventType === 'touchend' 
-                      ? new TouchEvent("touchend", {
-                          bubbles: true,
-                          cancelable: true,
-                        })
-                      : new MouseEvent("click", {
-                          bubbles: true,
-                          cancelable: true,
-                        });
+                    // not empty
+                    const newEvent = new MouseEvent("click", {
+                      bubbles: true,
+                      cancelable: true,
+                    });
                     Object.defineProperty(newEvent, "sf_openDoc", {
                       // add trigger ev to indicate if its a manual trigger
                       value: true,
@@ -318,9 +299,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           element.addEventListener("click", handleEvent);
           element.addEventListener("touchend", handleEvent);
         } else if (this.isPhone || this.isTablet) {
-          // For mobile devices, listen to both click and touchend to ensure reliability
           element.addEventListener("click", handleEvent);
-          element.addEventListener("touchend", handleEvent);
         } else {
           if (!already_shown_the_incompatible_device_message) {
             showMessage(
