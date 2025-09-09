@@ -318,7 +318,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           }
         }
       });
-    }, 100);
+    }, 200);//TODO: this is not elegant...
   }
 
   expandSubfolder(item: HTMLElement) {
