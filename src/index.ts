@@ -11,6 +11,7 @@ enum DocTreeFakeSubfolderMode {
   Normal = "normal",
   Capture = "capture", // click to add item into list
   Reveal = "reveal", // click to view the actual document
+  KeyboardNav = "keyboard_nav", // keyboard navigation mode
 }
 
 export default class SiyuanDoctreeFakeSubfolder extends Plugin {
@@ -26,6 +27,21 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private isDesktop: boolean;
   private isPhone: boolean;
   private isTablet: boolean;
+  
+  // Keyboard navigation properties
+  private keyboardNavActive: boolean = false;
+  private keyboardNavOverlay: HTMLElement | null = null;
+  private docTreeItems: Array<{
+    element: HTMLElement;
+    nodeId: string;
+    name: string;
+    level: number;
+    hasChildren: boolean;
+    isExpanded: boolean;
+  }> = [];
+  private keyMappings: Map<string, number> = new Map(); // key -> index in docTreeItems
+  private currentKeySequence: string = "";
+  private keySequenceTimeout: number | null = null;
 
 
   /*
@@ -280,6 +296,10 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
 
             case DocTreeFakeSubfolderMode.Reveal:
               break;
+
+            case DocTreeFakeSubfolderMode.KeyboardNav:
+              // Don't interfere with document tree clicks in keyboard nav mode
+              break;
           }
 
           // fallback
@@ -347,6 +367,295 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     toggleButton.dispatchEvent(clickEvent);
   }
 
+  // Keyboard navigation methods
+  private generateKeySequence(index: number): string {
+    if (index < 26) {
+      return String.fromCharCode(97 + index); // a-z
+    }
+    
+    const firstChar = Math.floor((index - 26) / 26);
+    const secondChar = (index - 26) % 26;
+    return String.fromCharCode(97 + firstChar) + String.fromCharCode(97 + secondChar);
+  }
+
+  private scanDocumentTree(): void {
+    this.docTreeItems = [];
+    this.keyMappings.clear();
+
+    const docTree = document.querySelector('.b3-list--background');
+    if (!docTree) {
+      console.warn('Document tree not found');
+      return;
+    }
+
+    const items = docTree.querySelectorAll('li[data-type="navigation-file"], li[data-type="navigation-root"]');
+    let visibleIndex = 0;
+
+    items.forEach((item) => {
+      const element = item as HTMLElement;
+      const nodeId = element.getAttribute('data-node-id') || '';
+      const nameElement = element.querySelector('.b3-list-item__text');
+      const name = nameElement?.textContent?.trim() || '';
+      
+      // Calculate level based on padding
+      const toggle = element.querySelector('.b3-list-item__toggle') as HTMLElement;
+      const paddingLeft = toggle ? parseInt(toggle.style.paddingLeft || '0') : 0;
+      const level = Math.max(0, Math.floor(paddingLeft / 18));
+      
+      // Check if has children and is expanded
+      const toggleButton = element.querySelector('.b3-list-item__toggle');
+      const hasChildren = toggleButton && !toggleButton.classList.contains('fn__hidden');
+      const arrow = toggleButton?.querySelector('.b3-list-item__arrow');
+      const isExpanded = arrow && arrow.classList.contains('b3-list-item__arrow--open');
+
+      // Only include visible items
+      if (element.offsetParent !== null) {
+        const keySequence = this.generateKeySequence(visibleIndex);
+        
+        this.docTreeItems.push({
+          element,
+          nodeId,
+          name,
+          level,
+          hasChildren: !!hasChildren,
+          isExpanded: !!isExpanded
+        });
+
+        this.keyMappings.set(keySequence, visibleIndex);
+        visibleIndex++;
+      }
+    });
+  }
+
+  private createKeyboardNavOverlay(): HTMLElement {
+    const overlay = document.createElement('div');
+    overlay.className = 'keyboard-nav-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      color: white;
+      font-family: monospace;
+      overflow: auto;
+    `;
+
+    const header = document.createElement('div');
+    header.style.cssText = `
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.9);
+      border-bottom: 1px solid #444;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+    `;
+    header.textContent = 'Keyboard Navigation - Press key to open/expand document, ESC to exit';
+
+    const content = document.createElement('div');
+    content.style.cssText = `
+      flex: 1;
+      padding: 20px;
+      overflow: auto;
+    `;
+
+    const list = document.createElement('ul');
+    list.style.cssText = `
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      line-height: 1.6;
+    `;
+
+    this.docTreeItems.forEach((item, index) => {
+      const keySequence = this.generateKeySequence(index);
+      const li = document.createElement('li');
+      li.style.cssText = `
+        padding: 8px 0;
+        padding-left: ${item.level * 20}px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #333;
+      `;
+
+      const keySpan = document.createElement('span');
+      keySpan.style.cssText = `
+        background: #007acc;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+        margin-right: 12px;
+        min-width: 30px;
+        text-align: center;
+      `;
+      keySpan.textContent = keySequence;
+
+      const iconSpan = document.createElement('span');
+      iconSpan.style.cssText = `margin-right: 8px;`;
+      
+      // Get the icon from the original element
+      const originalIcon = item.element.querySelector('.b3-list-item__icon');
+      if (originalIcon) {
+        iconSpan.innerHTML = originalIcon.innerHTML;
+      } else {
+        iconSpan.textContent = item.hasChildren ? (item.isExpanded ? '📂' : '📁') : '📄';
+      }
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = item.name;
+      
+      const statusSpan = document.createElement('span');
+      statusSpan.style.cssText = `
+        margin-left: auto;
+        font-size: 12px;
+        color: #888;
+      `;
+      if (item.hasChildren) {
+        statusSpan.textContent = item.isExpanded ? '(expanded)' : '(collapsed)';
+      }
+
+      li.appendChild(keySpan);
+      li.appendChild(iconSpan);
+      li.appendChild(nameSpan);
+      li.appendChild(statusSpan);
+      list.appendChild(li);
+    });
+
+    content.appendChild(list);
+    overlay.appendChild(header);
+    overlay.appendChild(content);
+
+    return overlay;
+  }
+
+  private showKeyboardNavigation(): void {
+    if (this.keyboardNavActive) return;
+
+    this.scanDocumentTree();
+    this.keyboardNavOverlay = this.createKeyboardNavOverlay();
+    document.body.appendChild(this.keyboardNavOverlay);
+    this.keyboardNavActive = true;
+
+    // Add keyboard event listener
+    document.addEventListener('keydown', this.keyboardNavigationHandler);
+  }
+
+  private hideKeyboardNavigation(): void {
+    if (!this.keyboardNavActive) return;
+
+    if (this.keyboardNavOverlay) {
+      document.body.removeChild(this.keyboardNavOverlay);
+      this.keyboardNavOverlay = null;
+    }
+    
+    // Reset sequence state
+    this.currentKeySequence = "";
+    if (this.keySequenceTimeout) {
+      clearTimeout(this.keySequenceTimeout);
+      this.keySequenceTimeout = null;
+    }
+    
+    this.keyboardNavActive = false;
+    document.removeEventListener('keydown', this.keyboardNavigationHandler);
+  }
+
+  // Store the bound handler to properly remove it
+  private keyboardNavigationHandler = this.handleKeyboardNavigation.bind(this);
+
+  private handleKeyboardNavigation(event: KeyboardEvent): void {
+    if (!this.keyboardNavActive) return;
+
+    // ESC to exit
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.hideKeyboardNavigation();
+      return;
+    }
+
+    // Only handle a-z keys
+    const key = event.key.toLowerCase();
+    if (!/^[a-z]$/.test(key)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    // Clear any existing timeout
+    if (this.keySequenceTimeout) {
+      clearTimeout(this.keySequenceTimeout);
+    }
+
+    // Add to current sequence
+    this.currentKeySequence += key;
+
+    // Check for exact match
+    if (this.keyMappings.has(this.currentKeySequence)) {
+      const index = this.keyMappings.get(this.currentKeySequence)!;
+      this.executeKeyboardAction(index);
+      this.currentKeySequence = "";
+      return;
+    }
+
+    // Check if this sequence could be the start of a valid sequence
+    const hasPartialMatch = Array.from(this.keyMappings.keys()).some(
+      mapping => mapping.startsWith(this.currentKeySequence)
+    );
+
+    if (hasPartialMatch) {
+      // Set timeout to reset sequence if no more keys pressed
+      this.keySequenceTimeout = window.setTimeout(() => {
+        this.currentKeySequence = "";
+        this.updateKeySequenceDisplay();
+      }, 2000);
+      
+      this.updateKeySequenceDisplay();
+    } else {
+      // No partial match, reset
+      this.currentKeySequence = "";
+      this.updateKeySequenceDisplay();
+    }
+  }
+
+  private updateKeySequenceDisplay(): void {
+    if (!this.keyboardNavOverlay) return;
+    
+    const header = this.keyboardNavOverlay.querySelector('div') as HTMLElement;
+    if (!header) return;
+
+    if (this.currentKeySequence) {
+      header.textContent = `Keyboard Navigation - Current sequence: "${this.currentKeySequence}" (ESC to exit)`;
+    } else {
+      header.textContent = 'Keyboard Navigation - Press key to open/expand document, ESC to exit';
+    }
+  }
+
+  private executeKeyboardAction(index: number): void {
+    const item = this.docTreeItems[index];
+    if (!item) return;
+
+    this.hideKeyboardNavigation();
+
+    if (item.hasChildren) {
+      // If it has children, expand/collapse it
+      this.expandSubfolder(item.element);
+    } else {
+      // If it's a document, open it
+      const clickEvent = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+      });
+      Object.defineProperty(clickEvent, "sf_openDoc", {
+        value: true,
+      });
+      item.element.dispatchEvent(clickEvent);
+    }
+  }
+
   async onload() {
     this.treatAsSubfolderIdSet = new Set();
     this.treatAsSubfolderEmojiSet = new Set();
@@ -407,6 +716,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       description: this.i18n.enableModeSwitchButtonsDesc,
     });
     this.settingUtils.addItem({
+      key: "enable_keyboard_navigation",
+      value: true,
+      type: "checkbox",
+      title: "Enable Keyboard Navigation",
+      description: "Enable keyboard navigation interface for quick document access. Use a-z keys to navigate, then ab, ac, etc. for more items.",
+    });
+    this.settingUtils.addItem({
       key: "Hint",
       value: "",
       type: "hint",
@@ -441,6 +757,12 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           </symbol>
           `);
 
+    this.addIcons(`
+      <symbol id="iconDoctreeFakeSubfolderKeyboardMode" viewBox="0 0 24 24">
+          <path d="M3 6C3 4.89543 3.89543 4 5 4H19C20.1046 4 21 4.89543 21 6V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V6ZM5 6V18H19V6H5ZM6 8H7V9H6V8ZM9 8H10V9H9V8ZM12 8H13V9H12V8ZM15 8H16V9H15V8ZM18 8H19V9H18V8ZM6 11H7V12H6V11ZM9 11H10V12H9V11ZM12 11H13V12H12V11ZM15 11H16V12H15V11ZM18 11H19V12H18V11ZM8 14H16V15H8V14Z"></path>
+          </symbol>
+          `);
+
     this.frontend = getFrontend();
     this.backend = getBackend();
     this.isPhone =
@@ -467,6 +789,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       normal: HTMLElement;
       capture: HTMLElement;
       reveal: HTMLElement;
+      keyboard: HTMLElement;
     }
   ) {
     const setButtonStyle = (button: HTMLElement, isActive: boolean) => {
@@ -490,6 +813,10 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       buttons.reveal,
       activeMode === DocTreeFakeSubfolderMode.Reveal
     );
+    setButtonStyle(
+      buttons.keyboard,
+      activeMode === DocTreeFakeSubfolderMode.KeyboardNav
+    );
   }
 
   private switchMode(
@@ -498,6 +825,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       normal: HTMLElement;
       capture: HTMLElement;
       reveal: HTMLElement;
+      keyboard: HTMLElement;
     }
   ) {
     this.to_normal_mode_count < 2 ? this.to_normal_mode_count++ : null;
@@ -517,11 +845,20 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         text: this.i18n.enterRevealMode,
         duration: 8000,
       },
+      [DocTreeFakeSubfolderMode.KeyboardNav]: {
+        text: "Keyboard Navigation Mode - Click me again to show navigation interface",
+        duration: 4000,
+      },
     };
 
     const { text, duration } = messages[mode];
     if (this.to_normal_mode_count >= 2) {
       showMessage(text, duration);
+    }
+
+    // Special handling for keyboard navigation mode
+    if (mode === DocTreeFakeSubfolderMode.KeyboardNav) {
+      this.showKeyboardNavigation();
     }
   }
 
@@ -566,6 +903,13 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           callback: () =>
             this.switchMode(DocTreeFakeSubfolderMode.Reveal, buttons),
         }),
+        keyboard: this.addTopBar({
+          icon: "iconDoctreeFakeSubfolderKeyboardMode",
+          title: "Keyboard Navigation",
+          position: "left",
+          callback: () =>
+            this.switchMode(DocTreeFakeSubfolderMode.KeyboardNav, buttons),
+        }),
       };
 
       const ifShowCaptureModeButton = this.settingUtils.get("enable_auto_mode") &&
@@ -575,12 +919,22 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         buttons.capture.style.display = "none";
       }
 
+      // Hide keyboard navigation button if disabled
+      if (!this.settingUtils.get("enable_keyboard_navigation")) {
+        buttons.keyboard.style.display = "none";
+      }
+
       // default to normal mode
       this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons);
     }
   }
 
-  async onunload() { }
+  async onunload() {
+    // Clean up keyboard navigation if active
+    if (this.keyboardNavActive) {
+      this.hideKeyboardNavigation();
+    }
+  }
 
   uninstall() { }
 }
