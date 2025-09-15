@@ -377,48 +377,51 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     this.docTreeItems = [];
     this.keyMappings.clear();
 
-    const docTree = document.querySelector('.b3-list--background');
-    if (!docTree) {
+    const docTrees = document.querySelectorAll('.b3-list--background');
+    if (docTrees.length === 0) {
       console.warn('Document tree not found');
       return;
     }
 
-    const items = docTree.querySelectorAll('li[data-type="navigation-file"], li[data-type="navigation-root"]');
     let visibleIndex = 0;
 
-    items.forEach((item) => {
-      const element = item as HTMLElement;
-      const nodeId = element.getAttribute('data-node-id') || '';
-      const nameElement = element.querySelector('.b3-list-item__text');
-      const name = nameElement?.textContent?.trim() || '';
-      
-      // Calculate level based on padding
-      const toggle = element.querySelector('.b3-list-item__toggle') as HTMLElement;
-      const paddingLeft = toggle ? parseInt(toggle.style.paddingLeft || '0') : 0;
-      const level = Math.max(0, Math.floor(paddingLeft / 18));
-      
-      // Check if has children and is expanded
-      const toggleButton = element.querySelector('.b3-list-item__toggle');
-      const hasChildren = toggleButton && !toggleButton.classList.contains('fn__hidden');
-      const arrow = toggleButton?.querySelector('.b3-list-item__arrow');
-      const isExpanded = arrow && arrow.classList.contains('b3-list-item__arrow--open');
+    docTrees.forEach((docTree) => {
+      const items = docTree.querySelectorAll('li[data-type="navigation-file"], li[data-type="navigation-root"]');
 
-      // Only include visible items
-      if (element.offsetParent !== null) {
-        const keySequence = this.generateKeySequence(visibleIndex);
+      items.forEach((item) => {
+        const element = item as HTMLElement;
+        const nodeId = element.getAttribute('data-node-id') || '';
+        const nameElement = element.querySelector('.b3-list-item__text');
+        const name = nameElement?.textContent?.trim() || '';
         
-        this.docTreeItems.push({
-          element,
-          nodeId,
-          name,
-          level,
-          hasChildren: !!hasChildren,
-          isExpanded: !!isExpanded
-        });
+        // Calculate level based on padding
+        const toggle = element.querySelector('.b3-list-item__toggle') as HTMLElement;
+        const paddingLeft = toggle ? parseInt(toggle.style.paddingLeft || '0') : 0;
+        const level = Math.max(0, Math.floor(paddingLeft / 18));
+        
+        // Check if has children and is expanded
+        const toggleButton = element.querySelector('.b3-list-item__toggle');
+        const hasChildren = toggleButton && !toggleButton.classList.contains('fn__hidden');
+        const arrow = toggleButton?.querySelector('.b3-list-item__arrow');
+        const isExpanded = arrow && arrow.classList.contains('b3-list-item__arrow--open');
 
-        this.keyMappings.set(keySequence, visibleIndex);
-        visibleIndex++;
-      }
+        // Only include visible items
+        if (element.offsetParent !== null) {
+          const keySequence = this.generateKeySequence(visibleIndex);
+          
+          this.docTreeItems.push({
+            element,
+            nodeId,
+            name,
+            level,
+            hasChildren: !!hasChildren,
+            isExpanded: !!isExpanded
+          });
+
+          this.keyMappings.set(keySequence, visibleIndex);
+          visibleIndex++;
+        }
+      });
     });
   }
 
@@ -471,11 +474,26 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       const li = document.createElement('li');
       li.style.cssText = `
         padding: 8px 0;
-        padding-left: ${item.level * 20}px;
+        padding-left: ${20 + item.level * 24}px;
         display: flex;
         align-items: center;
         border-bottom: 1px solid #333;
+        position: relative;
       `;
+
+      // Add tree structure indicators
+      if (item.level > 0) {
+        const treeIndicator = document.createElement('span');
+        treeIndicator.style.cssText = `
+          position: absolute;
+          left: ${12 + (item.level - 1) * 24}px;
+          color: #666;
+          font-size: 12px;
+          width: 16px;
+        `;
+        treeIndicator.textContent = '├─';
+        li.appendChild(treeIndicator);
+      }
 
       const keySpan = document.createElement('span');
       keySpan.style.cssText = `
@@ -487,11 +505,12 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         margin-right: 12px;
         min-width: 30px;
         text-align: center;
+        flex-shrink: 0;
       `;
       keySpan.textContent = keySequence;
 
       const iconSpan = document.createElement('span');
-      iconSpan.style.cssText = `margin-right: 8px;`;
+      iconSpan.style.cssText = `margin-right: 8px; flex-shrink: 0;`;
       
       // Get the icon from the original element
       const originalIcon = item.element.querySelector('.b3-list-item__icon');
@@ -502,13 +521,21 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       }
 
       const nameSpan = document.createElement('span');
+      nameSpan.style.cssText = `
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      `;
       nameSpan.textContent = item.name;
       
       const statusSpan = document.createElement('span');
       statusSpan.style.cssText = `
-        margin-left: auto;
+        margin-left: 12px;
         font-size: 12px;
         color: #888;
+        flex-shrink: 0;
       `;
       if (item.hasChildren) {
         statusSpan.textContent = item.isExpanded ? '(expanded)' : '(collapsed)';
@@ -685,11 +712,26 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           const li = document.createElement('li');
           li.style.cssText = `
             padding: 8px 0;
-            padding-left: ${item.level * 20}px;
+            padding-left: ${20 + item.level * 24}px;
             display: flex;
             align-items: center;
             border-bottom: 1px solid #333;
+            position: relative;
           `;
+
+          // Add tree structure indicators
+          if (item.level > 0) {
+            const treeIndicator = document.createElement('span');
+            treeIndicator.style.cssText = `
+              position: absolute;
+              left: ${12 + (item.level - 1) * 24}px;
+              color: #666;
+              font-size: 12px;
+              width: 16px;
+            `;
+            treeIndicator.textContent = '├─';
+            li.appendChild(treeIndicator);
+          }
 
           const keySpan = document.createElement('span');
           keySpan.style.cssText = `
@@ -701,11 +743,12 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
             margin-right: 12px;
             min-width: 30px;
             text-align: center;
+            flex-shrink: 0;
           `;
           keySpan.textContent = keySequence;
 
           const iconSpan = document.createElement('span');
-          iconSpan.style.cssText = `margin-right: 8px;`;
+          iconSpan.style.cssText = `margin-right: 8px; flex-shrink: 0;`;
           
           // Get the icon from the original element
           const originalIcon = item.element.querySelector('.b3-list-item__icon');
@@ -716,13 +759,21 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           }
 
           const nameSpan = document.createElement('span');
+          nameSpan.style.cssText = `
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          `;
           nameSpan.textContent = item.name;
           
           const statusSpan = document.createElement('span');
           statusSpan.style.cssText = `
-            margin-left: auto;
+            margin-left: 12px;
             font-size: 12px;
             color: #888;
+            flex-shrink: 0;
           `;
           if (item.hasChildren) {
             statusSpan.textContent = item.isExpanded ? '(expanded)' : '(collapsed)';
