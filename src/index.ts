@@ -11,7 +11,6 @@ enum DocTreeFakeSubfolderMode {
   Normal = "normal",
   Capture = "capture", // click to add item into list
   Reveal = "reveal", // click to view the actual document
-  KeyboardNav = "keyboard_nav", // keyboard navigation mode
 }
 
 export default class SiyuanDoctreeFakeSubfolder extends Plugin {
@@ -295,10 +294,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
               break;
 
             case DocTreeFakeSubfolderMode.Reveal:
-              break;
-
-            case DocTreeFakeSubfolderMode.KeyboardNav:
-              // Don't interfere with document tree clicks in keyboard nav mode
               break;
           }
 
@@ -638,13 +633,16 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     const item = this.docTreeItems[index];
     if (!item) return;
 
-    this.hideKeyboardNavigation();
-
     if (item.hasChildren) {
-      // If it has children, expand/collapse it
+      // If it has children, expand/collapse it - keep interface open
       this.expandSubfolder(item.element);
+      // Refresh the interface after a short delay to allow DOM update
+      setTimeout(() => {
+        this.refreshKeyboardNavigation();
+      }, 100);
     } else {
-      // If it's a document, open it
+      // If it's a document, open it and close interface
+      this.hideKeyboardNavigation();
       const clickEvent = new MouseEvent("click", {
         bubbles: true,
         cancelable: true,
@@ -654,6 +652,96 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       });
       item.element.dispatchEvent(clickEvent);
     }
+  }
+
+  private refreshKeyboardNavigation(): void {
+    if (!this.keyboardNavActive) return;
+    
+    // Rescan the document tree and update the display
+    this.scanDocumentTree();
+    
+    // Update the overlay content
+    if (this.keyboardNavOverlay) {
+      const content = this.keyboardNavOverlay.querySelector('div:nth-child(2)');
+      if (content) {
+        // Recreate the list
+        content.innerHTML = '';
+        content.style.cssText = `
+          flex: 1;
+          padding: 20px;
+          overflow: auto;
+        `;
+
+        const list = document.createElement('ul');
+        list.style.cssText = `
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          line-height: 1.6;
+        `;
+
+        this.docTreeItems.forEach((item, index) => {
+          const keySequence = this.generateKeySequence(index);
+          const li = document.createElement('li');
+          li.style.cssText = `
+            padding: 8px 0;
+            padding-left: ${item.level * 20}px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #333;
+          `;
+
+          const keySpan = document.createElement('span');
+          keySpan.style.cssText = `
+            background: #007acc;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 12px;
+            min-width: 30px;
+            text-align: center;
+          `;
+          keySpan.textContent = keySequence;
+
+          const iconSpan = document.createElement('span');
+          iconSpan.style.cssText = `margin-right: 8px;`;
+          
+          // Get the icon from the original element
+          const originalIcon = item.element.querySelector('.b3-list-item__icon');
+          if (originalIcon) {
+            iconSpan.innerHTML = originalIcon.innerHTML;
+          } else {
+            iconSpan.textContent = item.hasChildren ? (item.isExpanded ? '📂' : '📁') : '📄';
+          }
+
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = item.name;
+          
+          const statusSpan = document.createElement('span');
+          statusSpan.style.cssText = `
+            margin-left: auto;
+            font-size: 12px;
+            color: #888;
+          `;
+          if (item.hasChildren) {
+            statusSpan.textContent = item.isExpanded ? '(expanded)' : '(collapsed)';
+          }
+
+          li.appendChild(keySpan);
+          li.appendChild(iconSpan);
+          li.appendChild(nameSpan);
+          li.appendChild(statusSpan);
+          list.appendChild(li);
+        });
+
+        content.appendChild(list);
+      }
+    }
+    
+    // Reset current key sequence
+    this.currentKeySequence = "";
+    this.updateKeySequenceDisplay();
   }
 
   async onload() {
@@ -789,7 +877,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       normal: HTMLElement;
       capture: HTMLElement;
       reveal: HTMLElement;
-      keyboard: HTMLElement;
     }
   ) {
     const setButtonStyle = (button: HTMLElement, isActive: boolean) => {
@@ -813,10 +900,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       buttons.reveal,
       activeMode === DocTreeFakeSubfolderMode.Reveal
     );
-    setButtonStyle(
-      buttons.keyboard,
-      activeMode === DocTreeFakeSubfolderMode.KeyboardNav
-    );
   }
 
   private switchMode(
@@ -825,7 +908,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       normal: HTMLElement;
       capture: HTMLElement;
       reveal: HTMLElement;
-      keyboard: HTMLElement;
     }
   ) {
     this.to_normal_mode_count < 2 ? this.to_normal_mode_count++ : null;
@@ -845,20 +927,11 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         text: this.i18n.enterRevealMode,
         duration: 8000,
       },
-      [DocTreeFakeSubfolderMode.KeyboardNav]: {
-        text: "Keyboard Navigation Mode - Click me again to show navigation interface",
-        duration: 4000,
-      },
     };
 
     const { text, duration } = messages[mode];
     if (this.to_normal_mode_count >= 2) {
       showMessage(text, duration);
-    }
-
-    // Special handling for keyboard navigation mode
-    if (mode === DocTreeFakeSubfolderMode.KeyboardNav) {
-      this.showKeyboardNavigation();
     }
   }
 
@@ -903,13 +976,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           callback: () =>
             this.switchMode(DocTreeFakeSubfolderMode.Reveal, buttons),
         }),
-        keyboard: this.addTopBar({
-          icon: "iconDoctreeFakeSubfolderKeyboardMode",
-          title: "Keyboard Navigation",
-          position: "left",
-          callback: () =>
-            this.switchMode(DocTreeFakeSubfolderMode.KeyboardNav, buttons),
-        }),
       };
 
       const ifShowCaptureModeButton = this.settingUtils.get("enable_auto_mode") &&
@@ -919,13 +985,24 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         buttons.capture.style.display = "none";
       }
 
-      // Hide keyboard navigation button if disabled
-      if (!this.settingUtils.get("enable_keyboard_navigation")) {
-        buttons.keyboard.style.display = "none";
-      }
-
       // default to normal mode
       this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons);
+    }
+
+    // Add standalone keyboard navigation button if enabled
+    if (this.settingUtils.get("enable_keyboard_navigation")) {
+      this.addTopBar({
+        icon: "iconDoctreeFakeSubfolderKeyboardMode",
+        title: "Keyboard Navigation",
+        position: "left",
+        callback: () => {
+          if (this.keyboardNavActive) {
+            this.hideKeyboardNavigation();
+          } else {
+            this.showKeyboardNavigation();
+          }
+        },
+      });
     }
   }
 
