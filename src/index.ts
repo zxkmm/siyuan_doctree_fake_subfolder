@@ -19,8 +19,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private treatAsSubfolderEmojiSet: Set<string>;
   private mode: DocTreeFakeSubfolderMode = DocTreeFakeSubfolderMode.Normal;
   private to_normal_mode_count = 0;
-  //^ this is because when user enter the app, it not should display the "go to -ed normal mode noti",
-  //thus count and only display for 2nd times whatsoever
+  //^ this is because when user enter the app, it should not display the "go to -ed normal mode noti",
+  //thus count and only display from 2nd times whatsoever
   private frontend: string;
   private backend: string;
   private isDesktop: boolean;
