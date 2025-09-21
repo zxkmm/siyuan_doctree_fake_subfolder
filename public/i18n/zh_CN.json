@@ -4,9 +4,9 @@
     "enterNormalMode": "已进入普通模式",
     "enterCaptureMode": "已进入捕获模式，点击文档树的项目以把它们加入“视为子文件夹”列表",
     "enterRevealMode": "已进入揭露模式， 点击已被视为子文件夹的文档以临时查看（但不会恢复为普通文档）",
-    "normalMode": "文档树子文档插件：普通模式",
-    "captureMode": "文档树子文档插件：捕获模式",
-    "revealMode": "文档树子文档插件：揭露模式",
+    "normalMode": "多层笔记本插件：普通模式",
+    "captureMode": "多层笔记本插件：捕获模式",
+    "revealMode": "多层笔记本插件：揭露模式",
     "enableModeSwitchButtons": "启用模式切换按钮",
     "enableModeSwitchButtonsDesc": "启用后，在文档树上方会显示模式切换按钮，可以方便切换普通模式/捕获模式/揭露模式",
 
