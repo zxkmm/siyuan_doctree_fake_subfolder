@@ -18,7 +18,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private isDesktop: boolean;
   private isPhone: boolean;
   private isTablet: boolean;
-  
+
   private keyboardNav: KeyboardNavigationManager;
   private modeHandler: ModeHandler;
 
@@ -43,6 +43,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         error
       );
     }
+
+
 
     this.addIcons(` 
       <symbol id="iconDoctreeFakeSubfolderNormalMode" viewBox="0 0 48 48">
@@ -150,6 +152,19 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         icon: "iconDoctreeFakeSubfolderKeyboardMode",
         title: "Keyboard Navigation",
         position: "left",
+        callback: () => {
+          if (this.keyboardNav.isActive()) {
+            this.keyboardNav.hideKeyboardNavigation();
+          } else {
+            this.keyboardNav.showKeyboardNavigation();
+          }
+        },
+      });
+
+
+      this.addCommand({
+        langKey: "showDialog",
+        hotkey: "⌘Q",
         callback: () => {
           if (this.keyboardNav.isActive()) {
             this.keyboardNav.hideKeyboardNavigation();
