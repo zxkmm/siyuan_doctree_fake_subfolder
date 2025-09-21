@@ -2,7 +2,7 @@
   "name": "siyuan_doctree_fake_subfolder",
   "author": "zxkmm",
   "url": "https://github.com/zxkmm/siyuan_doctree_fake_subfolder",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "minAppVersion": "3.0.12",
   "backends": [
     "windows",
