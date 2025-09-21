@@ -1,351 +1,27 @@
-import { Plugin, getFrontend, getBackend, showMessage } from "siyuan";
+import { Plugin, getFrontend, getBackend } from "siyuan";
 import "@/index.scss";
-import { request, sql } from "./api";
 import { SettingUtils } from "./libs/setting-utils";
-
 import { stringToSet } from "./helpers";
 
-const STORAGE_NAME = "menu-config";
-
-enum DocTreeFakeSubfolderMode {
-  Normal = "normal",
-  Capture = "capture", // click to add item into list
-  Reveal = "reveal", // click to view the actual document
-}
+import { DocTreeFakeSubfolderMode } from "./types";
+import { STORAGE_NAME } from "./constants";
+import { KeyboardNavigationManager } from "./keyboard-navigation";
+import { ModeHandler } from "./mode-handler";
+import { initializeSettings } from "./settings";
 
 export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private settingUtils: SettingUtils;
   private treatAsSubfolderIdSet: Set<string>;
   private treatAsSubfolderEmojiSet: Set<string>;
-  private mode: DocTreeFakeSubfolderMode = DocTreeFakeSubfolderMode.Normal;
-  private to_normal_mode_count = 0;
-  //^ this is because when user enter the app, it not should display the "go to -ed normal mode noti",
-  //thus count and only display for 2nd times whatsoever
   private frontend: string;
   private backend: string;
   private isDesktop: boolean;
   private isPhone: boolean;
   private isTablet: boolean;
+  
+  private keyboardNav: KeyboardNavigationManager;
+  private modeHandler: ModeHandler;
 
-
-  /*
-   * @description: if toggle button has fn__hidden class, it means there is no sub document
-   * @return: has subfolder: true, no dubfolder: false
-   */
-  private async isProvidedIdHasSubDocument(element: HTMLElement): Promise<boolean> {
-    const toggleElement = element.querySelector('.b3-list-item__toggle');
-    if (!toggleElement) {
-      return false;
-    }
-
-    return !toggleElement.classList.contains('fn__hidden');
-  }
-
-
-  /*
-   * @description: return if the document is empty
-   * @return: empty: true, not empty: false
-   * 
-   * this APi were found by wilsons
-   * Thanks!
-   */
-  private async isProvidedIdIsEmptyDocument(id: string): Promise<boolean> {
-    let data = {
-      id: id
-    };
-    let url = '/api/block/getTreeStat';
-    const res = await request(url, data);
-    console.log(res, "res");
-    // 兼容不同API版本
-    const runeCount = res.runeCount ?? res.stat?.runeCount;
-    return runeCount === 0;
-  }
-
-  // unit test
-  private async example() {
-    const docId = "20250110144712-on18jor";
-    const isEmpty = await this.isProvidedIdIsEmptyDocument(docId);
-    if (isEmpty) {
-      console.log("empty doc");
-    } else {
-      console.log("not empty doc");
-    }
-  }
-
-  ifProvidedIdInTreatAsSubfolderSet(id: string) {
-    return this.treatAsSubfolderIdSet.has(id);
-  }
-
-  ifProvidedLiAreUsingUserDefinedIdentifyIcon(li: HTMLElement) {
-    const iconElement = li.querySelector(".b3-list-item__icon");
-    if (!iconElement) {
-      return false;
-    }
-
-    const iconText = iconElement.textContent;
-    if (!iconText) {
-      return false;
-    }
-
-    return this.treatAsSubfolderEmojiSet.has(iconText);
-  }
-
-  appendIdToTreatAsSubfolderSet(id: string) {
-    this.treatAsSubfolderIdSet.add(id);
-  }
-
-  removeIdFromTreatAsSubfolderSet(id: string) {
-    this.treatAsSubfolderIdSet.delete(id);
-  }
-
-  onClickDoctreeNode(nodeId: string) {
-    // dom
-    const element = document.querySelector(`li[data-node-id="${nodeId}"]`);
-    if (!element) {
-      console.warn(
-        "did not found element, probably caused by theme or something"
-      );
-      return;
-    }
-
-    // path
-    const id = element.getAttribute("data-node-id");
-    if (!id) {
-      console.warn(
-        "node missing id attribute, probably caused by theme or something"
-      );
-      return;
-    }
-
-    // // debug hint
-    // if (this.if_provided_id_in_treat_as_subfolder_set(id)) {
-    //   console.log(`forbid open: ${id} (node id: ${nodeId})`);
-    // } else {
-    //   console.log(`allow open: ${id} (node id: ${nodeId})`);
-    // }
-  }
-
-  captureToSetUnsetTreatAsSubfolderSetting(nodeId: string) {
-    // fetch setting
-    const idsStr = this.settingUtils.get(
-      "ids_that_should_be_treated_as_subfolder"
-    ) as string;
-
-    // into temp set
-    const tempSet = stringToSet(idsStr);
-
-    // worker
-    if (tempSet.has(nodeId)) {
-      // delete
-      tempSet.delete(nodeId);
-      showMessage(
-        `${this.i18n.recoveredThisDocumentFromSubfolder} ${nodeId}`,
-        2000,
-        "error"
-      ); //not err, just prettier with this style
-    } else {
-      // add
-      tempSet.add(nodeId);
-      showMessage(
-        `${this.i18n.consideredThisDocumentAsSubfolder} ${nodeId}`,
-        2000
-      );
-    }
-
-    // convery back
-    const newIdsStr = Array.from(tempSet).join(",");
-    this.settingUtils.set("ids_that_should_be_treated_as_subfolder", newIdsStr);
-    this.settingUtils.save();
-
-    // only need to update local var cuz when next boot it will load from settings anyway
-    this.treatAsSubfolderIdSet = tempSet;
-  }
-
-  private initListener() {
-    console.log("init_listener");
-    // 等待 DOM
-    setTimeout(() => {
-      const elements = document.querySelectorAll(".b3-list--background");
-      if (elements.length === 0) {
-        console.warn(
-          "not found .b3-list--background element, probably caused by theme or something"
-        );
-        return;
-      }
-
-      // NB: this lambda is aysnc
-      const handleEvent = async (e: MouseEvent | TouchEvent) => {
-        // this ev were added in later code and this is for checking
-        if ((e as any).sf_openDoc) {
-          return;
-        }
-
-        if (!e.target || !(e.target instanceof Element)) {
-          console.warn(
-            "event target is invalid, probably caused by theme or something"
-          );
-          return;
-        }
-
-        const listItem = e.target.closest(
-          'li[data-type="navigation-file"]'
-        ) as HTMLElement | null;
-        if (!listItem || e.target.closest(".b3-list-item__action")) {
-          return; // handle allow clicked emoji/more/etc
-        }
-
-        const nodeId = listItem.getAttribute("data-node-id");
-        const path = listItem.getAttribute("data-path");
-
-        try {
-          const clickedToggle = e.target.closest(".b3-list-item__toggle");
-          const clickedIcon = e.target.closest(".b3-list-item__icon");
-          // TODO: this probably already not needed anymore,
-          //cuz toggle were already protected previously and emoji also protected earlier,
-          //but leave as is for now
-          const isSpecialClick = !!(clickedToggle || clickedIcon);
-          /*                     ^ cast to bool */
-
-          if (!nodeId || !this.mode) {
-            return;
-          }
-
-          switch (this.mode) {
-            case DocTreeFakeSubfolderMode.Normal:
-              if (!isSpecialClick) {
-                // cache settings in case if more chaotic
-                const enableEmoji = this.settingUtils.get(
-                  "enable_using_emoji_as_subfolder_identify"
-                );
-                const enableId = this.settingUtils.get(
-                  "enable_using_id_as_subfolder_identify"
-                );
-                const enableAuto = this.settingUtils.get("enable_auto_mode");
-
-                // emoji and id in list
-                const isByEmoji =
-                  enableEmoji &&
-                  this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(listItem);
-                const isById =
-                  enableId && this.ifProvidedIdInTreatAsSubfolderSet(nodeId);
-
-                if (isByEmoji || isById) {
-                  // Treat as folder
-                  e.preventDefault();
-                  e.stopPropagation();
-                  this.expandSubfolder(listItem);
-                  return false; // shouldn't waiste it of gone here
-                } else {
-                  // empty check here
-                  e.preventDefault();
-                  e.stopPropagation();
-
-
-                  const isEmpty = await this.isProvidedIdIsEmptyDocument(
-                    nodeId
-                  );
-                  const hasSubDocument = await this.isProvidedIdHasSubDocument(
-                    listItem
-                  );
-                  console.log(isEmpty, hasSubDocument, "isEmpty, hasSubDocument");
-                  //TODO: it still look up db table even if auto mode disabled. Currently need it and it's not that lagging. will fix it later
-                  if (isEmpty && hasSubDocument && enableAuto) {
-                    // empty
-                    this.expandSubfolder(listItem);
-                    return false;
-                  } else {
-                    // not empty
-                    const newEvent = new MouseEvent("click", {
-                      bubbles: true,
-                      cancelable: true,
-                    });
-                    Object.defineProperty(newEvent, "sf_openDoc", {
-                      // add trigger ev to indicate if its a manual trigger
-                      value: true,
-                    });
-                    listItem.dispatchEvent(newEvent);
-                    return false;
-                  }
-                }
-              }
-              // toggle click: always fallthrough is good enough
-              break;
-
-            case DocTreeFakeSubfolderMode.Capture:
-              if (!isSpecialClick) {
-                // capture worker
-                this.captureToSetUnsetTreatAsSubfolderSetting(nodeId);
-              }
-              break;
-
-            case DocTreeFakeSubfolderMode.Reveal:
-              break;
-          }
-
-          // fallback
-          this.onClickDoctreeNode(nodeId);
-        } catch (err) {
-          console.error("error when handle document tree node click:", err);
-        }
-      };
-
-      let already_shown_the_incompatible_device_message = false;
-
-      // TODO: this part were written by chatGPT, need to go back and check what exactly changed, but worked anyway
-      // 监听事件时，不使用事件捕获阶段（第三个参数为 false 或省略）
-      // 这样可以让思源自身的展开折叠逻辑正常执行
-      elements.forEach((element) => {
-        if (this.isDesktop) {
-          element.addEventListener("click", handleEvent);
-          element.addEventListener("touchend", handleEvent);
-        } else if (this.isPhone || this.isTablet) {
-          element.addEventListener("click", handleEvent);
-        } else {
-          if (!already_shown_the_incompatible_device_message) {
-            showMessage(
-              "文档树子文件夹插件：开发者没有为您的设备做准备，清将如下信息和你的设备型号反馈给开发者：" +
-              this.frontend +
-              " " +
-              this.backend
-            );
-            showMessage(
-              "Document Tree Subfolder Plugin: Developer did not prepare for your device, please feedback the following information to the developer: " +
-              this.frontend +
-              " " +
-              this.backend
-            );
-            already_shown_the_incompatible_device_message = true;
-          }
-        }
-      });
-    }, 200);//TODO: this is not elegant...
-  }
-
-  expandSubfolder(item: HTMLElement) {
-    // console.log(item, "expand_subfolder");
-    if (!item) {
-      console.warn("not found li item, probably caused by theme or something");
-      return;
-    }
-
-    // the toggle btn
-    const toggleButton = item.querySelector(".b3-list-item__toggle");
-    if (!toggleButton) {
-      console.warn(
-        "arrow button missing. probably caused by theme or something"
-      );
-      return;
-    }
-
-    // simulate click
-    const clickEvent = new MouseEvent("click", {
-      view: window,
-      bubbles: true,
-      cancelable: true,
-    });
-
-    toggleButton.dispatchEvent(clickEvent);
-  }
 
   async onload() {
     this.treatAsSubfolderIdSet = new Set();
@@ -357,62 +33,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       plugin: this,
       name: STORAGE_NAME,
     });
-    this.settingUtils.addItem({
-      key: "begging",
-      value: "",
-      type: "hint",
-      title: this.i18n.beggingTitle,
-      description: this.i18n.beggingDesc,
-    });
-    this.settingUtils.addItem({
-      key: "enable_auto_mode",
-      value: true,
-      type: "checkbox",
-      title: this.i18n.enableAutoMode,
-      description: this.i18n.enableAutoModeDesc,
-    });
-    this.settingUtils.addItem({
-      key: "enable_using_emoji_as_subfolder_identify",
-      value: true,
-      type: "checkbox",
-      title: this.i18n.enableUsingEmojiAsSubfolderIdentify,
-      description: this.i18n.enableUsingEmojiAsSubfolderIdentifyDesc,
-    });
-    this.settingUtils.addItem({
-      key: "emojies_that_should_be_treated_as_subfolder",
-      value: "🗃️,📂,📁",
-      type: "textarea",
-      title: this.i18n.emojisThatShouldBeTreatedAsSubfolder,
-      description: this.i18n.emojisThatShouldBeTreatedAsSubfolderDesc,
-    });
-    this.settingUtils.addItem({
-      key: "enable_using_id_as_subfolder_identify",
-      value: true,
-      type: "checkbox",
-      title: this.i18n.enableUsingIdAsSubfolderIdentify,
-      description: this.i18n.enableUsingIdAsSubfolderIdentifyDesc,
-    });
-    this.settingUtils.addItem({
-      key: "ids_that_should_be_treated_as_subfolder",
-      value: "",
-      type: "textarea",
-      title: this.i18n.idsThatShouldBeTreatedAsSubfolder,
-      description: this.i18n.idsThatShouldBeTreatedAsSubfolderDesc,
-    });
-    this.settingUtils.addItem({
-      key: "enable_mode_switch_buttons",
-      value: true,
-      type: "checkbox",
-      title: this.i18n.enableModeSwitchButtons,
-      description: this.i18n.enableModeSwitchButtonsDesc,
-    });
-    this.settingUtils.addItem({
-      key: "Hint",
-      value: "",
-      type: "hint",
-      title: this.i18n.hintTitle,
-      description: this.i18n.hintDesc,
-    });
+    initializeSettings(this, this.settingUtils);
 
     try {
       this.settingUtils.load();
@@ -441,6 +62,12 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           </symbol>
           `);
 
+    this.addIcons(`
+      <symbol id="iconDoctreeFakeSubfolderKeyboardMode" viewBox="0 0 24 24">
+          <path d="M3 6C3 4.89543 3.89543 4 5 4H19C20.1046 4 21 4.89543 21 6V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V6ZM5 6V18H19V6H5ZM6 8H7V9H6V8ZM9 8H10V9H9V8ZM12 8H13V9H12V8ZM15 8H16V9H15V8ZM18 8H19V9H18V8ZM6 11H7V12H6V11ZM9 11H10V12H9V11ZM12 11H13V12H12V11ZM15 11H16V12H15V11ZM18 11H19V12H18V11ZM8 14H16V15H8V14Z"></path>
+          </symbol>
+          `);
+
     this.frontend = getFrontend();
     this.backend = getBackend();
     this.isPhone =
@@ -461,74 +88,12 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       this.backend != "docker";
   }
 
-  private updateTopBarButtonStyles(
-    activeMode: DocTreeFakeSubfolderMode,
-    buttons: {
-      normal: HTMLElement;
-      capture: HTMLElement;
-      reveal: HTMLElement;
-    }
-  ) {
-    const setButtonStyle = (button: HTMLElement, isActive: boolean) => {
-      button.style.backgroundColor = isActive
-        ? "var(--b3-toolbar-color)"
-        : "var(--b3-toolbar-background)";
-      button.style.color = isActive
-        ? "var(--b3-toolbar-background)"
-        : "var(--b3-toolbar-color)";
-    };
-
-    setButtonStyle(
-      buttons.normal,
-      activeMode === DocTreeFakeSubfolderMode.Normal
-    );
-    setButtonStyle(
-      buttons.capture,
-      activeMode === DocTreeFakeSubfolderMode.Capture
-    );
-    setButtonStyle(
-      buttons.reveal,
-      activeMode === DocTreeFakeSubfolderMode.Reveal
-    );
-  }
-
-  private switchMode(
-    mode: DocTreeFakeSubfolderMode,
-    buttons: {
-      normal: HTMLElement;
-      capture: HTMLElement;
-      reveal: HTMLElement;
-    }
-  ) {
-    this.to_normal_mode_count < 2 ? this.to_normal_mode_count++ : null;
-    this.mode = mode;
-    this.updateTopBarButtonStyles(mode, buttons);
-
-    const messages = {
-      [DocTreeFakeSubfolderMode.Normal]: {
-        text: this.i18n.enterNormalMode,
-        duration: 2000,
-      },
-      [DocTreeFakeSubfolderMode.Capture]: {
-        text: this.i18n.enterCaptureMode,
-        duration: 8000,
-      },
-      [DocTreeFakeSubfolderMode.Reveal]: {
-        text: this.i18n.enterRevealMode,
-        duration: 8000,
-      },
-    };
-
-    const { text, duration } = messages[mode];
-    if (this.to_normal_mode_count >= 2) {
-      showMessage(text, duration);
-    }
-  }
-
   onLayoutReady() {
     console.log(this.frontend, this.backend);
     console.log(this.isPhone, this.isTablet, this.isDesktop);
-    this.initListener();
+    this.modeHandler = new ModeHandler(this.settingUtils, this.treatAsSubfolderIdSet, this.treatAsSubfolderEmojiSet, this.i18n, this.frontend, this.backend, this.isDesktop, this.isPhone, this.isTablet);
+    this.keyboardNav = new KeyboardNavigationManager();
+    this.modeHandler.initializeListener();
     this.settingUtils.load();
 
     // load emoji setting
@@ -550,21 +115,21 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           title: this.i18n.normalMode,
           position: "left",
           callback: () =>
-            this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons),
+            this.modeHandler.switchToMode(DocTreeFakeSubfolderMode.Normal, buttons),
         }),
         capture: this.addTopBar({
           icon: "iconDoctreeFakeSubfolderCaptureMode",
           title: this.i18n.captureMode,
           position: "left",
           callback: () =>
-            this.switchMode(DocTreeFakeSubfolderMode.Capture, buttons),
+            this.modeHandler.switchToMode(DocTreeFakeSubfolderMode.Capture, buttons),
         }),
         reveal: this.addTopBar({
           icon: "iconDoctreeFakeSubfolderRevealMode",
           title: this.i18n.revealMode,
           position: "left",
           callback: () =>
-            this.switchMode(DocTreeFakeSubfolderMode.Reveal, buttons),
+            this.modeHandler.switchToMode(DocTreeFakeSubfolderMode.Reveal, buttons),
         }),
       };
 
@@ -576,11 +141,32 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       }
 
       // default to normal mode
-      this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons);
+      this.modeHandler.switchToMode(DocTreeFakeSubfolderMode.Normal, buttons);
+    }
+
+    // Add standalone keyboard navigation button if enabled
+    if (this.settingUtils.get("enable_keyboard_navigation")) {
+      this.addTopBar({
+        icon: "iconDoctreeFakeSubfolderKeyboardMode",
+        title: "Keyboard Navigation",
+        position: "left",
+        callback: () => {
+          if (this.keyboardNav.isActive()) {
+            this.keyboardNav.hideKeyboardNavigation();
+          } else {
+            this.keyboardNav.showKeyboardNavigation();
+          }
+        },
+      });
     }
   }
 
-  async onunload() { }
+  async onunload() {
+    // Clean up keyboard navigation if active
+    if (this.keyboardNav.isActive()) {
+      this.keyboardNav.hideKeyboardNavigation();
+    }
+  }
 
   uninstall() { }
 }
