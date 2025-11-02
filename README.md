@@ -1,3 +1,9 @@
+# branch notes
+- the `main` branch contains the keyboard nav layout that written by AI. 
+- the `temp_main` branch is the original code that before AI had written anything to it. I made the branch to fix the issue on mobile, cuz it's hard to debug with codes that not written by me.
+- the keb nav feat will be merged into here after I fixed the mobile issue.
+
+
 # Doctree Nested folder support for SiYuan
 
 This plugin is protected by AGLP 3.0 license
