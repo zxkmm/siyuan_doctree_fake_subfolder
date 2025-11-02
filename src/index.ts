@@ -26,6 +26,9 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private isDesktop: boolean;
   private isPhone: boolean;
   private isTablet: boolean;
+  private mutationObserver: MutationObserver | null = null;
+  private trackedElements: WeakSet<Element> = new WeakSet();
+  private handleEvent: ((e: MouseEvent | TouchEvent) => Promise<void | boolean>) | null = null;
 
 
   /*
@@ -161,164 +164,241 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     this.treatAsSubfolderIdSet = tempSet;
   }
 
+  /**
+   * Attach event listeners to a .b3-list--background element
+   * Uses WeakSet to track which elements already have listeners (high performance)
+   */
+  private attachListenerToElement(element: Element) {
+    // Skip if already tracked (O(1) lookup with WeakSet)
+    if (this.trackedElements.has(element)) {
+      return;
+    }
+
+    let already_shown_the_incompatible_device_message = false;
+
+    if (this.isDesktop) {
+      element.addEventListener("click", this.handleEvent!);
+      element.addEventListener("touchend", this.handleEvent!);
+    } else if (this.isPhone || this.isTablet) {
+      element.addEventListener("click", this.handleEvent!);
+    } else {
+      if (!already_shown_the_incompatible_device_message) {
+        showMessage(
+          "文档树子文件夹插件：开发者没有为您的设备做准备，清将如下信息和你的设备型号反馈给开发者：" +
+          this.frontend +
+          " " +
+          this.backend
+        );
+        showMessage(
+          "Document Tree Subfolder Plugin: Developer did not prepare for your device, please feedback the following information to the developer: " +
+          this.frontend +
+          " " +
+          this.backend
+        );
+        already_shown_the_incompatible_device_message = true;
+      }
+    }
+
+    // Mark as tracked (WeakSet automatically garbage collects when element is removed from DOM)
+    this.trackedElements.add(element);
+  }
+
+  /**
+   * Attach listeners to all existing .b3-list--background elements
+   */
+  private attachListenersToAllElements() {
+    const elements = document.querySelectorAll(".b3-list--background");
+    elements.forEach((element) => this.attachListenerToElement(element));
+  }
+
+  /**
+   * Initialize event listeners with MutationObserver for dynamic DOM changes
+   * This is a smart, event-driven approach (no polling/timers)
+   */
   private initListener() {
-    console.log("init_listener");
-    // 等待 DOM
-    setTimeout(() => {
-      const elements = document.querySelectorAll(".b3-list--background");
-      if (elements.length === 0) {
+    console.log("init_listener with MutationObserver watchdog");
+
+    // Define the event handler (stored as instance variable for cleanup)
+    this.handleEvent = async (e: MouseEvent | TouchEvent) => {
+      // this ev were added in later code and this is for checking
+      if ((e as any).sf_openDoc) {
+        return;
+      }
+
+      if (!e.target || !(e.target instanceof Element)) {
         console.warn(
-          "not found .b3-list--background element, probably caused by theme or something"
+          "event target is invalid, probably caused by theme or something"
         );
         return;
       }
 
-      // NB: this lambda is aysnc
-      const handleEvent = async (e: MouseEvent | TouchEvent) => {
-        // this ev were added in later code and this is for checking
-        if ((e as any).sf_openDoc) {
+      const listItem = e.target.closest(
+        'li[data-type="navigation-file"]'
+      ) as HTMLElement | null;
+      if (!listItem || e.target.closest(".b3-list-item__action")) {
+        return; // handle allow clicked emoji/more/etc
+      }
+
+      const nodeId = listItem.getAttribute("data-node-id");
+
+      try {
+        const clickedToggle = e.target.closest(".b3-list-item__toggle");
+        const clickedIcon = e.target.closest(".b3-list-item__icon");
+        // TODO: this probably already not needed anymore,
+        //cuz toggle were already protected previously and emoji also protected earlier,
+        //but leave as is for now
+        const isSpecialClick = !!(clickedToggle || clickedIcon);
+        /*                     ^ cast to bool */
+
+        if (!nodeId || !this.mode) {
           return;
         }
 
-        if (!e.target || !(e.target instanceof Element)) {
-          console.warn(
-            "event target is invalid, probably caused by theme or something"
-          );
-          return;
+        switch (this.mode) {
+          case DocTreeFakeSubfolderMode.Normal:
+            if (!isSpecialClick) {
+              // cache settings in case if more chaotic
+              const enableEmoji = this.settingUtils.get(
+                "enable_using_emoji_as_subfolder_identify"
+              );
+              const enableId = this.settingUtils.get(
+                "enable_using_id_as_subfolder_identify"
+              );
+              const enableAuto = this.settingUtils.get("enable_auto_mode");
+
+              // emoji and id in list
+              const isByEmoji =
+                enableEmoji &&
+                this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(listItem);
+              const isById =
+                enableId && this.ifProvidedIdInTreatAsSubfolderSet(nodeId);
+
+              if (isByEmoji || isById) {
+                // Treat as folder
+                e.preventDefault();
+                e.stopPropagation();
+                this.expandSubfolder(listItem);
+                return false; // shouldn't waiste it of gone here
+              } else {
+                // empty check here
+                e.preventDefault();
+                e.stopPropagation();
+
+
+                const isEmpty = await this.isProvidedIdIsEmptyDocument(
+                  nodeId
+                );
+                const hasSubDocument = await this.isProvidedIdHasSubDocument(
+                  listItem
+                );
+                console.log(isEmpty, hasSubDocument, "isEmpty, hasSubDocument");
+                //TODO: it still look up db table even if auto mode disabled. Currently need it and it's not that lagging. will fix it later
+                if (isEmpty && hasSubDocument && enableAuto) {
+                  // empty
+                  this.expandSubfolder(listItem);
+                  return false;
+                } else {
+                  // not empty
+                  const newEvent = new MouseEvent("click", {
+                    bubbles: true,
+                    cancelable: true,
+                  });
+                  Object.defineProperty(newEvent, "sf_openDoc", {
+                    // add trigger ev to indicate if its a manual trigger
+                    value: true,
+                  });
+                  listItem.dispatchEvent(newEvent);
+                  return false;
+                }
+              }
+            }
+            // toggle click: always fallthrough is good enough
+            break;
+
+          case DocTreeFakeSubfolderMode.Capture:
+            if (!isSpecialClick) {
+              // capture worker
+              this.captureToSetUnsetTreatAsSubfolderSetting(nodeId);
+            }
+            break;
+
+          case DocTreeFakeSubfolderMode.Reveal:
+            break;
         }
 
-        const listItem = e.target.closest(
-          'li[data-type="navigation-file"]'
-        ) as HTMLElement | null;
-        if (!listItem || e.target.closest(".b3-list-item__action")) {
-          return; // handle allow clicked emoji/more/etc
-        }
+        // fallback
+        this.onClickDoctreeNode(nodeId);
+      } catch (err) {
+        console.error("error when handle document tree node click:", err);
+      }
+    };
 
-        const nodeId = listItem.getAttribute("data-node-id");
-        const path = listItem.getAttribute("data-path");
+    // Initial attachment with retry mechanism for early loading
+    const tryAttach = () => {
+      const elements = document.querySelectorAll(".b3-list--background");
+      if (elements.length > 0) {
+        console.log(`Found ${elements.length} .b3-list--background elements, attaching listeners`);
+        this.attachListenersToAllElements();
+        return true;
+      }
+      return false;
+    };
 
-        try {
-          const clickedToggle = e.target.closest(".b3-list-item__toggle");
-          const clickedIcon = e.target.closest(".b3-list-item__icon");
-          // TODO: this probably already not needed anymore,
-          //cuz toggle were already protected previously and emoji also protected earlier,
-          //but leave as is for now
-          const isSpecialClick = !!(clickedToggle || clickedIcon);
-          /*                     ^ cast to bool */
+    // Try immediately
+    if (!tryAttach()) {
+      // If not found, retry after a short delay (handles early plugin load)
+      console.log("No .b3-list--background elements found, will retry and watch for DOM changes");
+      setTimeout(tryAttach, 200);
+    }
 
-          if (!nodeId || !this.mode) {
+    // Setup MutationObserver to watch for dynamically added .b3-list--background elements
+    // This is event-driven and very efficient - only triggers when DOM actually changes
+    this.mutationObserver = new MutationObserver((mutations) => {
+      // Only process if mutations actually added nodes (filter early for performance)
+      const hasAddedNodes = mutations.some(mutation => mutation.addedNodes.length > 0);
+      if (!hasAddedNodes) {
+        return;
+      }
+
+      // Check for new .b3-list--background elements in added nodes
+      // This is O(k) where k = number of newly added nodes, NOT O(n) where n = total DOM elements
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType !== Node.ELEMENT_NODE) {
             return;
           }
 
-          switch (this.mode) {
-            case DocTreeFakeSubfolderMode.Normal:
-              if (!isSpecialClick) {
-                // cache settings in case if more chaotic
-                const enableEmoji = this.settingUtils.get(
-                  "enable_using_emoji_as_subfolder_identify"
-                );
-                const enableId = this.settingUtils.get(
-                  "enable_using_id_as_subfolder_identify"
-                );
-                const enableAuto = this.settingUtils.get("enable_auto_mode");
+          const element = node as Element;
 
-                // emoji and id in list
-                const isByEmoji =
-                  enableEmoji &&
-                  this.ifProvidedLiAreUsingUserDefinedIdentifyIcon(listItem);
-                const isById =
-                  enableId && this.ifProvidedIdInTreatAsSubfolderSet(nodeId);
-
-                if (isByEmoji || isById) {
-                  // Treat as folder
-                  e.preventDefault();
-                  e.stopPropagation();
-                  this.expandSubfolder(listItem);
-                  return false; // shouldn't waiste it of gone here
-                } else {
-                  // empty check here
-                  e.preventDefault();
-                  e.stopPropagation();
-
-
-                  const isEmpty = await this.isProvidedIdIsEmptyDocument(
-                    nodeId
-                  );
-                  const hasSubDocument = await this.isProvidedIdHasSubDocument(
-                    listItem
-                  );
-                  console.log(isEmpty, hasSubDocument, "isEmpty, hasSubDocument");
-                  //TODO: it still look up db table even if auto mode disabled. Currently need it and it's not that lagging. will fix it later
-                  if (isEmpty && hasSubDocument && enableAuto) {
-                    // empty
-                    this.expandSubfolder(listItem);
-                    return false;
-                  } else {
-                    // not empty
-                    const newEvent = new MouseEvent("click", {
-                      bubbles: true,
-                      cancelable: true,
-                    });
-                    Object.defineProperty(newEvent, "sf_openDoc", {
-                      // add trigger ev to indicate if its a manual trigger
-                      value: true,
-                    });
-                    listItem.dispatchEvent(newEvent);
-                    return false;
-                  }
-                }
-              }
-              // toggle click: always fallthrough is good enough
-              break;
-
-            case DocTreeFakeSubfolderMode.Capture:
-              if (!isSpecialClick) {
-                // capture worker
-                this.captureToSetUnsetTreatAsSubfolderSetting(nodeId);
-              }
-              break;
-
-            case DocTreeFakeSubfolderMode.Reveal:
-              break;
+          // Check if the added node itself is a .b3-list--background
+          if (element.classList.contains("b3-list--background")) {
+            console.log("Detected new .b3-list--background element, attaching listener");
+            this.attachListenerToElement(element);
+            // Early return to avoid redundant querySelectorAll
+            // If the element itself is .b3-list--background, we don't need to search its children
+            return;
           }
 
-          // fallback
-          this.onClickDoctreeNode(nodeId);
-        } catch (err) {
-          console.error("error when handle document tree node click:", err);
-        }
-      };
-
-      let already_shown_the_incompatible_device_message = false;
-
-      // TODO: this part were written by chatGPT, need to go back and check what exactly changed, but worked anyway
-      // 监听事件时，不使用事件捕获阶段（第三个参数为 false 或省略）
-      // 这样可以让思源自身的展开折叠逻辑正常执行
-      elements.forEach((element) => {
-        if (this.isDesktop) {
-          element.addEventListener("click", handleEvent);
-          element.addEventListener("touchend", handleEvent);
-        } else if (this.isPhone || this.isTablet) {
-          element.addEventListener("click", handleEvent);
-        } else {
-          if (!already_shown_the_incompatible_device_message) {
-            showMessage(
-              "文档树子文件夹插件：开发者没有为您的设备做准备，清将如下信息和你的设备型号反馈给开发者：" +
-              this.frontend +
-              " " +
-              this.backend
-            );
-            showMessage(
-              "Document Tree Subfolder Plugin: Developer did not prepare for your device, please feedback the following information to the developer: " +
-              this.frontend +
-              " " +
-              this.backend
-            );
-            already_shown_the_incompatible_device_message = true;
+          // Only search children if the node itself is not a .b3-list--background
+          // This is still scoped to the newly added subtree, not the entire DOM
+          const childElements = element.querySelectorAll(".b3-list--background");
+          if (childElements.length > 0) {
+            console.log(`Detected ${childElements.length} new .b3-list--background elements in subtree, attaching listeners`);
+            childElements.forEach((child) => this.attachListenerToElement(child));
           }
-        }
+        });
       });
-    }, 200);//TODO: this is not elegant...
+    });
+
+    // Start observing the entire document body for changes
+    // We watch childList and subtree to catch any DOM modifications
+    this.mutationObserver.observe(document.body, {
+      childList: true,  // Watch for added/removed nodes
+      subtree: true     // Watch entire subtree (nested changes)
+      // Note: We don't watch attributes or characterData for performance
+    });
+
+    console.log("MutationObserver started, will auto-detect new document tree elements");
   }
 
   expandSubfolder(item: HTMLElement) {
@@ -580,7 +660,14 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     }
   }
 
-  async onunload() { }
+  async onunload() {
+    // Cleanup: disconnect MutationObserver to prevent memory leaks
+    if (this.mutationObserver) {
+      this.mutationObserver.disconnect();
+      this.mutationObserver = null;
+      console.log("MutationObserver disconnected");
+    }
+  }
 
   uninstall() { }
 }
