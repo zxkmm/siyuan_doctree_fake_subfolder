@@ -6,6 +6,7 @@ import { SettingUtils } from "./libs/setting-utils";
 import { stringToSet } from "./helpers";
 
 const STORAGE_NAME = "menu-config";
+const REVEAL_MODIFIER_KEYS = new Set(["Shift", "Meta", "Control"]);
 
 enum DocTreeFakeSubfolderMode {
   Normal = "normal",
@@ -29,6 +30,18 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private mutationObserver: MutationObserver | null = null;
   private trackedElements: WeakSet<Element> = new WeakSet();
   private handleEvent: ((e: MouseEvent | TouchEvent) => Promise<void | boolean>) | null = null;
+  private handleKeyDown: ((e: KeyboardEvent) => void) | null = null;
+  private handleKeyUp: ((e: KeyboardEvent) => void) | null = null;
+  private revealModifierActive = false;
+  private previousMode: DocTreeFakeSubfolderMode | null = null;
+  private revealModifierPressedKeys: Set<string> = new Set();
+  private topBarButtons:
+    | {
+        normal: HTMLElement;
+        capture: HTMLElement;
+        reveal: HTMLElement;
+      }
+    | null = null;
 
 
   /*
@@ -574,7 +587,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
 
   private switchMode(
     mode: DocTreeFakeSubfolderMode,
-    buttons: {
+    buttons?: {
       normal: HTMLElement;
       capture: HTMLElement;
       reveal: HTMLElement;
@@ -582,7 +595,10 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   ) {
     this.to_normal_mode_count < 2 ? this.to_normal_mode_count++ : null;
     this.mode = mode;
-    this.updateTopBarButtonStyles(mode, buttons);
+    const targetButtons = buttons ?? this.topBarButtons;
+    if (targetButtons) {
+      this.updateTopBarButtonStyles(mode, targetButtons);
+    }
 
     const messages = {
       [DocTreeFakeSubfolderMode.Normal]: {
@@ -648,6 +664,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         }),
       };
 
+      this.topBarButtons = buttons;
+
       const ifShowCaptureModeButton = this.settingUtils.get("enable_auto_mode") &&
         !this.settingUtils.get("enable_using_id_as_subfolder_identify");
 
@@ -658,6 +676,51 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       // default to normal mode
       this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons);
     }
+
+    // Shift / Command (mac) / Ctrl (win/linux) temporarily switch to Reveal mode while held
+    this.handleKeyDown = (e: KeyboardEvent) => {
+      if (!REVEAL_MODIFIER_KEYS.has(e.key)) {
+        return;
+      }
+
+      if (!this.revealModifierPressedKeys.has(e.key)) {
+        this.revealModifierPressedKeys.add(e.key);
+      }
+
+      if (this.revealModifierActive) {
+        return;
+      }
+
+      this.revealModifierActive = true;
+      this.previousMode = this.mode;
+      this.switchMode(DocTreeFakeSubfolderMode.Reveal);
+    };
+
+    this.handleKeyUp = (e: KeyboardEvent) => {
+      if (!REVEAL_MODIFIER_KEYS.has(e.key)) {
+        return;
+      }
+
+      this.revealModifierPressedKeys.delete(e.key);
+
+      if (this.revealModifierPressedKeys.size > 0) {
+        return;
+      }
+
+      if (!this.revealModifierActive) {
+        return;
+      }
+
+      this.revealModifierActive = false;
+
+      if (this.previousMode) {
+        this.switchMode(this.previousMode);
+      }
+      this.previousMode = null;
+    };
+
+    document.addEventListener("keydown", this.handleKeyDown);
+    document.addEventListener("keyup", this.handleKeyUp);
   }
 
   async onunload() {
@@ -666,6 +729,15 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       this.mutationObserver.disconnect();
       this.mutationObserver = null;
       console.log("MutationObserver disconnected");
+    }
+
+    if (this.handleKeyDown) {
+      document.removeEventListener("keydown", this.handleKeyDown);
+      this.handleKeyDown = null;
+    }
+    if (this.handleKeyUp) {
+      document.removeEventListener("keyup", this.handleKeyUp);
+      this.handleKeyUp = null;
     }
   }
 
