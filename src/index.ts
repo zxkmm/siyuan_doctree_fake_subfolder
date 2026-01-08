@@ -178,9 +178,10 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
 
     if (this.isDesktop) {
       element.addEventListener("click", this.handleEvent!);
-      element.addEventListener("touchend", this.handleEvent!);
     } else if (this.isPhone || this.isTablet) {
       element.addEventListener("click", this.handleEvent!);
+      element.addEventListener("touchend", this.handleEvent!);
+
     } else {
       if (!already_shown_the_incompatible_device_message) {
         showMessage(
@@ -531,6 +532,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       ((this.frontend === "desktop" || this.frontend === "browser-desktop") &&
         this.backend === "android") ||
       ((this.frontend === "desktop" || this.frontend === "browser-desktop") &&
+        this.backend === "harmony") ||
+      ((this.frontend === "desktop" || this.frontend === "browser-desktop") &&
         this.backend === "docker");
     this.isDesktop =
       (this.frontend === "desktop" ||
@@ -538,6 +541,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         this.frontend === "desktop-window") &&
       this.backend != "ios" &&
       this.backend != "android" &&
+      this.backend != "harmony" &&
       this.backend != "docker";
   }
 
