@@ -180,7 +180,10 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       element.addEventListener("click", this.handleEvent!);
     } else if (this.isPhone || this.isTablet) {
       element.addEventListener("click", this.handleEvent!);
-      element.addEventListener("touchend", this.handleEvent!);
+      // element.addEventListener("touchend", this.handleEvent!);
+      // the ghost touch seems common on touchscreen, 
+      // possibly by siyuan's bad touch event handling, 
+      // the click works so far, so keep it until future tune...
 
     } else {
       if (!already_shown_the_incompatible_device_message) {
