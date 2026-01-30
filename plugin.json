@@ -2,7 +2,7 @@
   "name": "siyuan_doctree_fake_subfolder",
   "author": "zxkmm",
   "url": "https://github.com/zxkmm/siyuan_doctree_fake_subfolder",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "minAppVersion": "3.0.12",
   "backends": [
     "windows",
@@ -21,12 +21,12 @@
     "desktop-window"
   ],
   "displayName": {
-    "en_US": "Doctree Fake Subfolder",
-    "zh_CN": "多层笔记本"
+    "en_US": "Doctree Fake Subfolder Auto Expand",
+    "zh_CN": "多层笔记本自动展开"
   },
   "description": {
     "en_US": "Provide capabilities to create nested folders in doctree",
-    "zh_CN": "提供在思源文档树中创建多层笔记本的能力(点击子文档可展开但是不打开)"
+    "zh_CN": "在文档树中使用多层笔记本并自动展开，就像文件资源管理器中的文件夹一样"
   },
   "readme": {
     "en_US": "README.md",

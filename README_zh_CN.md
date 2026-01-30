@@ -20,3 +20,7 @@
 - [itljsj](https://github.com/tljsj) : 修复Docker兼容问题
 - [wilsons](https://ld246.com/member/wilsons) : 在设计全自动模式时候帮我写 SQL 和找到 getTreeStat API。谢谢！
 - [OpaqueGlass](https://github.com/OpaqueGlass) : 虽然这个插件没有使用OpaqueGlass的确切代码，但我或多或少从OpaqueGlass的[syplugin-doubleClickFileTree](https://github.com/OpaqueGlass/syplugin-doubleClickFileTree)项目中得到过灵感，因为我在写这个插件之前就读了ta的代码。谢谢！
+
+# 申明
+- 该产品使用Posthog和Clarity收集必要的用户数据用于改进分析和用户登录认证。  
+- 我们不会查看和上传你的笔记和文件，若不信任可阅读源代码。

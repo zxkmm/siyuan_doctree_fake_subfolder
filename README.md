@@ -22,3 +22,7 @@ This plugin is protected by AGLP 3.0 license
 - [itljsj](https://github.com/tljsj)
 - [wilsons](https://ld246.com/member/wilsons) : Written SQL and found getTreeStat API in designing the fully automated mode. Thank you!
 - [OpaqueGlass](https://github.com/OpaqueGlass) : Although this plugin does not use OpaqueGlass’s exact code, I have more or less been inspired by OpaqueGlass’s [syplugin-doubleClickFileTree](https://github.com/OpaqueGlass/syplugin-doubleClickFileTree) project, as I read their code before writing this plugin. Thank you!
+
+# Notice
+This product uses Posthog and Clarity to collect necessary user data for analytics and user authentication.  
+We aren't able to see your notes and files. Check source code if you don't trust.
