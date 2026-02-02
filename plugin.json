@@ -22,11 +22,11 @@
   ],
   "displayName": {
     "en_US": "Doctree Fake Subfolder Auto Expand",
-    "zh_CN": "多层笔记本自动展开"
+    "zh_CN": "多层笔记本自然展开"
   },
   "description": {
     "en_US": "Provide capabilities to create nested folders in doctree",
-    "zh_CN": "在文档树中使用多层笔记本并自动展开，就像文件资源管理器中的文件夹一样"
+    "zh_CN": "让文档树有自然展开的能力，类似于嵌套多层笔记本，就像文件资源管理器中的文件夹一样"
   },
   "readme": {
     "en_US": "README.md",
