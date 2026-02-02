@@ -5,7 +5,6 @@ import { SettingUtils } from "./libs/setting-utils";
 
 import { stringToSet } from "./helpers";
 import posthog from 'posthog-js'
-import Clarity from '@microsoft/clarity';
 
 const STORAGE_NAME = "menu-config";
 
@@ -440,15 +439,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       api_host: 'https://us.i.posthog.com',
       defaults: '2025-11-30'
     })
-
-    const projectId = "v9eu53rc5g";
-    Clarity.init(projectId);
-    const custom_session_id = window.siyuan?.user?.userId;
-    const custom_id = window.siyuan.config.system.id
-    const friendly_name = window.siyuan?.user?.userName;
-    const custom_page_id = window.siyuan?.user?.userNickname;
-;
-    Clarity.identify(custom_id, custom_session_id, custom_page_id, friendly_name); 
 
     this.treatAsSubfolderIdSet = new Set();
     this.treatAsSubfolderEmojiSet = new Set();
