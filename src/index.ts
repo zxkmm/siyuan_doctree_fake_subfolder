@@ -4,7 +4,6 @@ import { request, sql } from "./api";
 import { SettingUtils } from "./libs/setting-utils";
 
 import { stringToSet } from "./helpers";
-import posthog from 'posthog-js'
 
 const STORAGE_NAME = "menu-config";
 
@@ -221,9 +220,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
    * This is a smart, event-driven approach (no polling/timers)
    */
   private initListener() {
-    posthog.capture('plugin_init', { property: 'value' })
-    Clarity.event("plugin_init");
-    console.log("init_listener with MutationObserver watchdog");
 
     // Define the event handler (stored as instance variable for cleanup)
     this.handleEvent = async (e: MouseEvent | TouchEvent) => {
@@ -435,10 +431,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   }
 
   async onload() {
-    posthog.init('phc_cpXsecXrjxZ4VwmngIUCWUrAjKLIFM5CSqDioGIN4jV', {
-      api_host: 'https://us.i.posthog.com',
-      defaults: '2025-11-30'
-    })
 
     this.treatAsSubfolderIdSet = new Set();
     this.treatAsSubfolderEmojiSet = new Set();
