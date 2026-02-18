@@ -1,3 +1,97 @@
 button.b3-menu__item[data-id^="plugin_siyuan_doctree_fake_subfolder_"] {
 	display: none !important;
 }
+
+li[data-type="navigation-file"] {
+	position: relative;
+	overflow: hidden;
+}
+
+li[data-type="navigation-file"]::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0;
+}
+
+li[data-type="navigation-file"].sf-action-flow-expand::after {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--b3-theme-on-surface) 0%, transparent) 0%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 12%, transparent) 32%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 38%, transparent) 52%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 12%, transparent) 72%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 0%, transparent) 100%
+	);
+	transform: translateY(-120%);
+	animation: sf-flow-expand 980ms cubic-bezier(0.18, 0.7, 0.2, 1) forwards;
+}
+
+li[data-type="navigation-file"].sf-action-flow-collapse::after {
+	background: linear-gradient(
+		180deg,
+		color-mix(in srgb, var(--b3-theme-on-surface) 0%, transparent) 0%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 12%, transparent) 32%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 38%, transparent) 52%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 12%, transparent) 72%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 0%, transparent) 100%
+	);
+	transform: translateY(120%);
+	animation: sf-flow-collapse 980ms cubic-bezier(0.18, 0.7, 0.2, 1) forwards;
+}
+
+li[data-type="navigation-file"].sf-action-flow-open::after {
+	background: linear-gradient(
+		115deg,
+		color-mix(in srgb, var(--b3-theme-on-surface) 0%, transparent) 20%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 16%, transparent) 40%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 48%, transparent) 50%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 16%, transparent) 60%,
+		color-mix(in srgb, var(--b3-theme-on-surface) 0%, transparent) 80%
+	);
+	transform: translateX(-130%) skewX(-16deg);
+	animation: sf-flow-open 1120ms cubic-bezier(0.16, 0.72, 0.18, 1) forwards;
+}
+
+@keyframes sf-flow-expand {
+	0% {
+		opacity: 0;
+		transform: translateY(-120%);
+	}
+	28% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(120%);
+	}
+}
+
+@keyframes sf-flow-open {
+	0% {
+		opacity: 0;
+		transform: translateX(-130%) skewX(-16deg);
+	}
+	30% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		transform: translateX(130%) skewX(-16deg);
+	}
+}
+
+@keyframes sf-flow-collapse {
+	0% {
+		opacity: 0;
+		transform: translateY(120%);
+	}
+	14% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(-120%);
+	}
+}

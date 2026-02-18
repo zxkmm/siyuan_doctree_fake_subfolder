@@ -29,6 +29,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private mutationObserver: MutationObserver | null = null;
   private trackedElements: WeakSet<Element> = new WeakSet();
   private handleEvent: ((e: MouseEvent | TouchEvent) => Promise<void | boolean>) | null = null;
+  private readonly actionFlowClassPrefix = "sf-action-flow-";
 
 
   /*
@@ -302,6 +303,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
                   return false;
                 } else {
                   // not empty
+                  this.playActionLightFlow(listItem, "open");
                   const newEvent = new MouseEvent("click", {
                     bubbles: true,
                     cancelable: true,
@@ -411,6 +413,11 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       return;
     }
 
+    const arrowIcon = item.querySelector(".b3-list-item__arrow");
+    const isExpandedBefore =
+      arrowIcon?.classList.contains("b3-list-item__arrow--open") ?? false;
+    this.playActionLightFlow(item, isExpandedBefore ? "collapse" : "expand");
+
     // the toggle btn
     const toggleButton = item.querySelector(".b3-list-item__toggle");
     if (!toggleButton) {
@@ -428,6 +435,25 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     });
 
     toggleButton.dispatchEvent(clickEvent);
+  }
+
+  private playActionLightFlow(
+    item: HTMLElement,
+    action: "expand" | "collapse" | "open"
+  ) {
+    const expandClass = `${this.actionFlowClassPrefix}expand`;
+    const collapseClass = `${this.actionFlowClassPrefix}collapse`;
+    const openClass = `${this.actionFlowClassPrefix}open`;
+    const className = `${this.actionFlowClassPrefix}${action}`;
+
+    item.classList.remove(expandClass, collapseClass, openClass);
+    // Force reflow so repeated quick clicks can replay animation.
+    void item.offsetWidth;
+    item.classList.add(className);
+
+    window.setTimeout(() => {
+      item.classList.remove(className);
+    }, 1300);
   }
 
   async onload() {
