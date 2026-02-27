@@ -2,12 +2,20 @@ button.b3-menu__item[data-id^="plugin_siyuan_doctree_fake_subfolder_"] {
 	display: none !important;
 }
 
-li[data-type="navigation-file"] {
+li[data-type="navigation-file"]:is(
+		.sf-action-flow-expand,
+		.sf-action-flow-collapse,
+		.sf-action-flow-open
+	) {
 	position: relative;
 	overflow: hidden;
 }
 
-li[data-type="navigation-file"]::after {
+li[data-type="navigation-file"]:is(
+		.sf-action-flow-expand,
+		.sf-action-flow-collapse,
+		.sf-action-flow-open
+	)::after {
 	content: "";
 	position: absolute;
 	inset: 0;
