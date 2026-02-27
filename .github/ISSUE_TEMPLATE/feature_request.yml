@@ -1,0 +1,44 @@
+name: Feature Request / 功能建议
+description: Suggest an improvement or new feature. / 提交改进建议或新功能需求。
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## IMPORTANT / 重要请求（请先看）
+
+        我已经快连拼好饭都吃不起了，如果您经济宽裕的话请行行好给我一点吃饭钱，避免我饿死，如果您经济不宽裕的话请给我点个免费的星星帮助我找到工作。
+
+        I am close to not being able to afford even the cheapest meals. If you are financially comfortable, please donate to help me survive. If not, please give this repository a free Star to help me find work.
+
+        - Donate / 赞助: https://zxkmm.com/donate
+        - Star this repository / 点个 Star: https://github.com/zxkmm/siyuan_doctree_fake_subfolder
+  - type: checkboxes
+    id: support_ack
+    attributes:
+      label: Before submitting / 提交前确认
+      options:
+        - label: I have read the support message above. / 我已阅读上方支持请求。
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to Solve / 要解决的问题
+      description: What pain point are you facing? / 你现在遇到的痛点是什么？
+      placeholder: Describe the problem first. / 请先描述问题。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution / 你的建议方案
+      placeholder: Describe your suggested feature or behavior. / 请描述你建议的功能或行为。
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered / 考虑过的替代方案
+      placeholder: Any other approach you considered? / 你是否考虑过其他实现方式？

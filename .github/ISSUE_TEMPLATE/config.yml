@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Donate / 赞助
+    url: https://zxkmm.com/donate
+    about: If you can afford it, please donate to support development and basic living costs.
+  - name: Star This Repository / 给仓库点个 Star
+    url: https://github.com/zxkmm/siyuan_doctree_fake_subfolder
+    about: If you cannot donate, please leave a free Star to help visibility and job opportunities.
