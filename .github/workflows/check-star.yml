@@ -45,14 +45,16 @@ jobs:
 
             let body;
             if (hasStarred) {
-              body = `@${user} 感谢您给本仓库点了 Star ⭐！您的支持对我意义重大，我会尽快处理您的 issue。🙏\n\n` +
-                `Thank you for starring ⭐ this repository! Your support means a lot. We'll look into your issue as soon as possible. 🙏`;
+              body = `@${user} 感谢您给本仓库点了 Star ⭐！您的支持对我意义重大。🙏\n\n` +
+                `Thank you for starring ⭐ this repository! Your support means a lot. 🙏`;
             } else {
               body = `@${user}\n\n` +
+                `如果您已经捐款，请忽略如下消息。If you already donated, please ignore the following info.` +
                 `我已经快连拼好饭都吃不起了，如果您经济宽裕的话请行行好给我一点吃饭钱，避免我饿死，如果您经济不宽裕的话请给我点个免费的星星帮助我找到工作。\n\n` +
                 `I am close to not being able to afford even the cheapest meals. If you are financially comfortable, please donate to help me survive. If not, please give this repository a free Star to help me find work.\n\n` +
                 `👉 [点 Star / Star this repository](https://github.com/${owner}/${repo})\n\n` +
-                `我还是会尽力帮助您的。😊 We'll still do our best to help you. 😊`;
+                `👉 [捐助 / Star this repository](https://github.com/${owner}/${repo})\n\n` +
+                `🙏🙏请行行好，做一个善良且知道回报的人.🙏🙏`;
             }
 
             await github.rest.issues.createComment({
