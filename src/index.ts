@@ -248,10 +248,12 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       try {
         const clickedToggle = e.target.closest(".b3-list-item__toggle");
         const clickedIcon = e.target.closest(".b3-list-item__icon");
+        const clickedSwitch = e.target.closest(".b3-list-item__switch"); //this is the publish server perm control button... wonder why they use this css.
+
         // TODO: this probably already not needed anymore,
         //cuz toggle were already protected previously and emoji also protected earlier,
         //but leave as is for now
-        const isSpecialClick = !!(clickedToggle || clickedIcon);
+        const isSpecialClick = !!(clickedToggle || clickedIcon || clickedSwitch);
         /*                     ^ cast to bool */
 
         if (!nodeId || !this.mode) {
