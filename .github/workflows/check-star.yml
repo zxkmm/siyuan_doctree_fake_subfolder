@@ -1,0 +1,80 @@
+name: Check if Issue Submitter Has Starred
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to check (for manual re-run on existing issues)'
+        required: true
+        type: number
+
+jobs:
+  check-star:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Check star status and comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo  = context.repo.repo;
+
+            // Support both automatic (issues: opened) and manual (workflow_dispatch) triggers
+            let issueNumber, user;
+            if (context.eventName === 'workflow_dispatch') {
+              issueNumber = parseInt(context.payload.inputs.issue_number, 10);
+              const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: issueNumber });
+              user = issue.user.login;
+            } else {
+              issueNumber = context.payload.issue.number;
+              user = context.payload.issue.user.login;
+            }
+
+            // Paginate through stargazers and check if the submitter is in the list
+            let hasStarred = false;
+            let page = 1;
+            outer: while (true) {
+              const { data: stargazers } = await github.rest.activity.listStargazersForRepo({
+                owner,
+                repo,
+                per_page: 100,
+                page,
+              });
+              if (stargazers.length === 0) break;
+              for (const stargazer of stargazers) {
+                const login = stargazer.login;
+                if (login === user) {
+                  hasStarred = true;
+                  break outer;
+                }
+              }
+              if (stargazers.length < 100) break;
+              page++;
+            }
+
+            let body;
+            if (hasStarred) {
+              body = `@${user} 感谢您给本仓库点了 Star ⭐！您的支持对我意义重大。🙏\n\n` +
+                `Thank you for starring ⭐ this repository! Your support means a lot. 🙏`;
+            } else {
+              body = `@${user}\n\n` +
+                `如果您已经捐款，请忽略如下消息。If you already donated, please ignore the following info.` +
+                `我已经快连拼好饭都吃不起了，如果您经济宽裕的话请行行好给我一点吃饭钱，避免我饿死，如果您经济不宽裕的话请给我点个免费的星星帮助我找到工作。\n\n` +
+                `I am close to not being able to afford even the cheapest meals. If you are financially comfortable, please donate to help me survive. If not, please give this repository a free Star to help me find work.\n\n` +
+                `👉 [点 Star / Star this repository](https://github.com/${owner}/${repo})\n\n` +
+                `👉 [捐助 / Star this repository](https://github.com/${owner}/${repo})\n\n` +
+                `🙏🙏请行行好，做一个善良且知道回报的人.🙏🙏`;
+            }
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              body,
+            });
