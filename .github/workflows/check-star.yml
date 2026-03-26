@@ -3,6 +3,12 @@ name: Check if Issue Submitter Has Starred
 on:
   issues:
     types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to check (for manual re-run on existing issues)'
+        required: true
+        type: number
 
 jobs:
   check-star:
@@ -18,8 +24,17 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo  = context.repo.repo;
-            const user  = context.payload.issue.user.login;
-            const issueNumber = context.payload.issue.number;
+
+            // Support both automatic (issues: opened) and manual (workflow_dispatch) triggers
+            let issueNumber, user;
+            if (context.eventName === 'workflow_dispatch') {
+              issueNumber = parseInt(context.payload.inputs.issue_number, 10);
+              const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number: issueNumber });
+              user = issue.user.login;
+            } else {
+              issueNumber = context.payload.issue.number;
+              user = context.payload.issue.user.login;
+            }
 
             // Paginate through stargazers and check if the submitter is in the list
             let hasStarred = false;
