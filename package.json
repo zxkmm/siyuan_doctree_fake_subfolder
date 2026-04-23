@@ -38,5 +38,10 @@
   "dependencies": {
     "@microsoft/clarity": "^1.0.2",
     "posthog-js": "^1.336.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "protobufjs": "7.5.5"
+    }
   }
 }
