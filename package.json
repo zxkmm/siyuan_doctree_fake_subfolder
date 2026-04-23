@@ -41,7 +41,8 @@
   },
   "pnpm": {
     "overrides": {
-      "protobufjs": "7.5.5"
+      "protobufjs": "7.5.5",
+      "immutable": "5.1.5"
     }
   }
 }
