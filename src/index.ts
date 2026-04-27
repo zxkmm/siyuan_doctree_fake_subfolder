@@ -245,6 +245,11 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
 
       const nodeId = listItem.getAttribute("data-node-id");
 
+      // holding Shift or Ctrl/Cmd means multi-selection — don't intercept
+      if (e.shiftKey || e.ctrlKey || e.metaKey) {
+        return;
+      }
+
       try {
         const clickedToggle = e.target.closest(".b3-list-item__toggle");
         const clickedIcon = e.target.closest(".b3-list-item__icon");

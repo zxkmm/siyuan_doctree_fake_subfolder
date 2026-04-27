@@ -1,10 +1,10 @@
 {
   "name": "siyuan_doctree_fake_subfolder",
-  "version": "2.0.10",
+  "version": "2.1.0",
   "type": "module",
   "description": "Provide capabilities to create nested folders in doctree",
-  "repository": "",
-  "homepage": "",
+  "repository": "https://github.com/zxkmm/siyuan_doctree_fake_subfolder",
+  "homepage": "https://github.com/zxkmm/siyuan_doctree_fake_subfolder",
   "author": "zxkmm",
   "license": "AGPL-3.0",
   "scripts": {
