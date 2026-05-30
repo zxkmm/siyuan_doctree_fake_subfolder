@@ -1,4 +1,4 @@
-import { Plugin, getFrontend, getBackend, showMessage } from "siyuan";
+import { Plugin, getFrontend, getBackend, showMessage, Menu } from "siyuan";
 import "@/index.scss";
 import { request, sql } from "./api";
 import { SettingUtils } from "./libs/setting-utils";
@@ -27,9 +27,23 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private isPhone: boolean;
   private isTablet: boolean;
   private mutationObserver: MutationObserver | null = null;
+  private headerObserver: MutationObserver | null = null;
   private trackedElements: WeakSet<Element> = new WeakSet();
+  private trackedHeaders: WeakSet<Element> = new WeakSet();
   private handleEvent: ((e: MouseEvent | TouchEvent) => Promise<void | boolean>) | null = null;
   private readonly actionFlowClassPrefix = "sf-action-flow-";
+
+  private buttons: {
+    switcher: HTMLElement[];
+  } = {
+      switcher: []
+    };
+
+  private readonly modeIcons = {
+    [DocTreeFakeSubfolderMode.Normal]: "iconDoctreeFakeSubfolderNormalMode",
+    [DocTreeFakeSubfolderMode.Capture]: "iconDoctreeFakeSubfolderCaptureMode",
+    [DocTreeFakeSubfolderMode.Reveal]: "iconDoctreeFakeSubfolderRevealMode",
+  };
 
 
   /*
@@ -463,6 +477,150 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     }, 1300);
   }
 
+  private getAvailableModes(): DocTreeFakeSubfolderMode[] {
+    const modes = [DocTreeFakeSubfolderMode.Normal, DocTreeFakeSubfolderMode.Reveal];
+    const hideCapture = this.settingUtils.get("enable_auto_mode") && !this.settingUtils.get("enable_using_id_as_subfolder_identify");
+    if (!hideCapture) {
+      modes.push(DocTreeFakeSubfolderMode.Capture);
+    }
+    return modes;
+  }
+
+  private getModeTitle(mode: DocTreeFakeSubfolderMode) {
+    switch (mode) {
+      case DocTreeFakeSubfolderMode.Normal: return this.i18n.normalMode;
+      case DocTreeFakeSubfolderMode.Capture: return this.i18n.captureMode;
+      case DocTreeFakeSubfolderMode.Reveal: return this.i18n.revealMode;
+    }
+  }
+
+  private onSwitcherClick(event: MouseEvent) {
+    const availableModes = this.getAvailableModes();
+    if (availableModes.length === 2) {
+      const nextMode = availableModes.find(m => m !== this.mode) || availableModes[0];
+      this.switchMode(nextMode);
+    } else {
+      const menu = new Menu("sf-mode-switcher-menu");
+
+      availableModes.forEach(mode => {
+        const item = menu.addItem({
+          icon: this.modeIcons[mode],
+          label: this.getModeTitle(mode),
+          click: () => this.switchMode(mode)
+        });
+        if (this.mode === mode) {
+          item.classList.add("b3-menu__item--selected");
+        }
+      });
+
+      if (this.isDesktop) {
+        menu.open({
+          x: event.clientX,
+          y: event.clientY,
+        });
+      } else {
+        menu.fullscreen();
+      }
+    }
+  }
+
+  private initHeaderListener() {
+    const selector = this.isDesktop ? ".block__icons" : ".toolbar";
+
+    const findAndInject = () => {
+      const headers = document.querySelectorAll(selector);
+      headers.forEach(header => this.checkAndInjectHeader(header as HTMLElement));
+    };
+
+    // Initial check
+    findAndInject();
+
+    this.headerObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.addedNodes.length > 0) {
+          mutation.addedNodes.forEach(node => {
+            if (node instanceof HTMLElement) {
+              if (node.matches(selector)) {
+                this.checkAndInjectHeader(node);
+              } else {
+                node.querySelectorAll(selector).forEach(h => this.checkAndInjectHeader(h as HTMLElement));
+              }
+            }
+          });
+        }
+      }
+    });
+
+    this.headerObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
+  private checkAndInjectHeader(header: HTMLElement) {
+    if (this.trackedHeaders.has(header)) return;
+
+    if (this.isDesktop) {
+      // Strictly only hook if it's within the document tree panel (sy__file)
+      if (header.closest(".sy__file")) {
+        this.injectButtonsToHeader(header);
+        this.trackedHeaders.add(header);
+      }
+    } else {
+      // On mobile, strictly only hook if it's within the document tree sidebar
+      if (header.closest('[data-type="sidebar-file"]')) {
+        this.injectButtonsToHeader(header);
+        this.trackedHeaders.add(header);
+      }
+    }
+  }
+
+  private injectButtonsToHeader(header: HTMLElement) {
+    const iconId = this.modeIcons[this.mode];
+    const title = this.getModeTitle(this.mode);
+
+    let btn: HTMLElement;
+    if (this.isDesktop) {
+      btn = document.createElement("span");
+      btn.className = "block__icon ariaLabel";
+      btn.setAttribute("data-position", "north");
+      btn.setAttribute("aria-label", title);
+      btn.innerHTML = `<svg><use xlink:href="#${iconId}"></use></svg>`;
+    } else {
+      btn = document.createElementNS("http://www.w3.org/2000/svg", "svg") as unknown as HTMLElement;
+      btn.setAttribute("class", "toolbar__icon ariaLabel");
+      btn.setAttribute("aria-label", title);
+      const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+      use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", `#${iconId}`);
+      btn.appendChild(use);
+    }
+
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      this.onSwitcherClick(e);
+    };
+
+    this.buttons.switcher.push(btn);
+
+    if (this.isDesktop) {
+      const logo = header.querySelector(".block__logo");
+      if (logo) {
+        logo.after(btn);
+        const space = document.createElement("span");
+        space.className = "fn__space";
+        btn.after(space);
+      } else {
+        header.prepend(btn);
+      }
+    } else {
+      const firstIcon = header.querySelector(".toolbar__icon");
+      if (firstIcon) {
+        firstIcon.before(btn);
+      } else {
+        header.appendChild(btn);
+      }
+    }
+
+    this.updateButtonStyles(this.mode);
+  }
+
   async onload() {
 
     this.treatAsSubfolderIdSet = new Set();
@@ -524,6 +682,17 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       description: this.i18n.enableModeSwitchButtonsDesc,
     });
     this.settingUtils.addItem({
+      key: "button_location",
+      value: "header",
+      type: "select",
+      title: this.i18n.buttonLocation,
+      description: this.i18n.buttonLocationDesc,
+      options: {
+        topbar: this.i18n.topBar,
+        header: this.i18n.docTreeHeader,
+      },
+    });
+    this.settingUtils.addItem({
       key: "Hint",
       value: "",
       type: "hint",
@@ -581,48 +750,36 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       this.backend != "docker";
   }
 
-  private updateTopBarButtonStyles(
-    activeMode: DocTreeFakeSubfolderMode,
-    buttons: {
-      normal: HTMLElement;
-      capture: HTMLElement;
-      reveal: HTMLElement;
-    }
+  private updateButtonStyles(
+    activeMode: DocTreeFakeSubfolderMode
   ) {
-    const setButtonStyle = (button: HTMLElement, isActive: boolean) => {
-      button.style.backgroundColor = isActive
-        ? "var(--b3-toolbar-color)"
-        : "var(--b3-toolbar-background)";
-      button.style.color = isActive
-        ? "var(--b3-toolbar-background)"
-        : "var(--b3-toolbar-color)";
-    };
+    this.buttons.switcher.forEach(btn => {
+      const iconId = this.modeIcons[activeMode];
+      const useElement = btn.querySelector("use");
+      if (useElement) {
+        useElement.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", `#${iconId}`);
+      }
+      btn.setAttribute("aria-label", this.getModeTitle(activeMode));
 
-    setButtonStyle(
-      buttons.normal,
-      activeMode === DocTreeFakeSubfolderMode.Normal
-    );
-    setButtonStyle(
-      buttons.capture,
-      activeMode === DocTreeFakeSubfolderMode.Capture
-    );
-    setButtonStyle(
-      buttons.reveal,
-      activeMode === DocTreeFakeSubfolderMode.Reveal
-    );
+      if (btn.classList.contains("block__icon") || btn.classList.contains("toolbar__icon")) {
+        // Header buttons highlight
+        if (activeMode !== DocTreeFakeSubfolderMode.Normal) {
+          btn.classList.add("ft__primary");
+          btn.style.color = "var(--b3-theme-primary)";
+        } else {
+          btn.classList.remove("ft__primary");
+          btn.style.color = "";
+        }
+      }
+    });
   }
 
   private switchMode(
-    mode: DocTreeFakeSubfolderMode,
-    buttons: {
-      normal: HTMLElement;
-      capture: HTMLElement;
-      reveal: HTMLElement;
-    }
+    mode: DocTreeFakeSubfolderMode
   ) {
     this.to_normal_mode_count < 2 ? this.to_normal_mode_count++ : null;
     this.mode = mode;
-    this.updateTopBarButtonStyles(mode, buttons);
+    this.updateButtonStyles(mode);
 
     const messages = {
       [DocTreeFakeSubfolderMode.Normal]: {
@@ -664,40 +821,25 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     this.treatAsSubfolderIdSet = stringToSet(idsStr);
 
     if (this.settingUtils.get("enable_mode_switch_buttons")) {
-      const buttons = {
-        normal: this.addTopBar({
-          icon: "iconDoctreeFakeSubfolderNormalMode",
-          title: this.i18n.normalMode,
-          position: "left",
-          callback: () =>
-            this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons),
-        }),
-        capture: this.addTopBar({
-          icon: "iconDoctreeFakeSubfolderCaptureMode",
-          title: this.i18n.captureMode,
-          position: "left",
-          callback: () =>
-            this.switchMode(DocTreeFakeSubfolderMode.Capture, buttons),
-        }),
-        reveal: this.addTopBar({
-          icon: "iconDoctreeFakeSubfolderRevealMode",
-          title: this.i18n.revealMode,
-          position: "left",
-          callback: () =>
-            this.switchMode(DocTreeFakeSubfolderMode.Reveal, buttons),
-        }),
-      };
-
-      const ifShowCaptureModeButton = this.settingUtils.get("enable_auto_mode") &&
-        !this.settingUtils.get("enable_using_id_as_subfolder_identify");
-
-      if (ifShowCaptureModeButton) {
-        buttons.capture.style.display = "none";
+      const location = this.settingUtils.get("button_location");
+      if (location === "topbar") {
+        this.addTopBarSwitcher();
+      } else {
+        this.initHeaderListener();
       }
 
-      // default to normal mode
-      this.switchMode(DocTreeFakeSubfolderMode.Normal, buttons);
+      this.switchMode(DocTreeFakeSubfolderMode.Normal);
     }
+  }
+
+  private addTopBarSwitcher() {
+    const btn = this.addTopBar({
+      icon: this.modeIcons[this.mode],
+      title: this.getModeTitle(this.mode),
+      position: "left",
+      callback: (event: MouseEvent) => this.onSwitcherClick(event)
+    });
+    this.buttons.switcher.push(btn);
   }
 
   async onunload() {
@@ -706,6 +848,11 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       this.mutationObserver.disconnect();
       this.mutationObserver = null;
       console.log("MutationObserver disconnected");
+    }
+    if (this.headerObserver) {
+      this.headerObserver.disconnect();
+      this.headerObserver = null;
+      console.log("Header MutationObserver disconnected");
     }
   }
 
