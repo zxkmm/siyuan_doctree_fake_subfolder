@@ -76,6 +76,8 @@
 
 ## 捐助者（如果您无意匿名，请发 issue 解除匿名）
 - 匿名 先生/女士
+- Zeroo 先生/女士
+- 热水冲泡陈粒果 先生/女士
 
 ## 贡献者
 - [ioxenus](https://github.com/ioxenus)

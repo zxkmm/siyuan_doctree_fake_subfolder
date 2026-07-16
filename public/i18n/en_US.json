@@ -28,6 +28,9 @@
     "hintTitle":"About",
     "hintDesc":"<a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>siyuan_doctree_fake_subfolder</a><br>AGLP3.0 License<br>💻 @zxkmm",
 
+    "deprecationDialogTitle": "Doctree Fake Subfolder Natural Expand",
+    "deprecationDialogContent": "Good news! SiYuan official will reimplement the functionality of this plugin in next release. To prevent conflict and cause usage issue, this plugin had disabled it's own functionality, so now you can safely remove this plugin.",
+
     "beggingTitle": "🙏 Begging 🙏",
     "beggingDesc": "This plugin is open source and free, so I need your encouragement.<br>If you like the features this plugin brings you, you can consider donating to help me with basic living expenses 🍚: <a href='https://pipe.b3log.org/blogs/zxkmm/articles/2025/02/08/1738993480704'>Donate</a>. (Donations won't unlock additional features)<br>If you're not financially comfortable, you can encourage me by giving a free ⭐ star to <a href='https://github.com/zxkmm/siyuan_doctree_fake_subfolder'>my GitHub repository</a>.<br>If you or someone you know needs my skills, feel free to hire me anytime."
   

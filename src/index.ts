@@ -1,4 +1,4 @@
-import { Plugin, getFrontend, getBackend, showMessage, Menu } from "siyuan";
+import { Plugin, getFrontend, getBackend, showMessage, Menu, Dialog } from "siyuan";
 import "@/index.scss";
 import { request, sql } from "./api";
 import { SettingUtils } from "./libs/setting-utils";
@@ -622,6 +622,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   }
 
   async onload() {
+    return;
 
     this.treatAsSubfolderIdSet = new Set();
     this.treatAsSubfolderEmojiSet = new Set();
@@ -803,6 +804,17 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   }
 
   onLayoutReady() {
+    const DEPRECATION_SHOWN_KEY = "siyuan_doctree_fake_subfolder_deprecation_shown";
+    if (!localStorage.getItem(DEPRECATION_SHOWN_KEY)) {
+      new Dialog({
+        title: this.i18n.deprecationDialogTitle,
+        content: `<div class="b3-dialog__content" style="padding:24px 16px;line-height:1.6;font-size:1.15em;">${this.i18n.deprecationDialogContent}</div>`,
+        width: "480px",
+      });
+      localStorage.setItem(DEPRECATION_SHOWN_KEY, "1");
+    }
+    return;
+
     console.log(this.frontend, this.backend);
     console.log(this.isPhone, this.isTablet, this.isDesktop);
     this.initListener();

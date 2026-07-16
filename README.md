@@ -37,6 +37,8 @@ Holding **Shift** or **Ctrl** (or **Cmd** on Mac) while clicking will always pas
 
 ## Donator (Leave an issue if you didn't mean to be anonymous)
 - Mr / Mrs. anonymous
+- Zeroo 先生/女士
+- 热水冲泡陈粒果 先生/女士
 
 ## Contributors
 - [ioxenus](https://github.com/ioxenus)
