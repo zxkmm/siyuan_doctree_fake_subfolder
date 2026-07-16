@@ -808,7 +808,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     if (!localStorage.getItem(DEPRECATION_SHOWN_KEY)) {
       new Dialog({
         title: this.i18n.deprecationDialogTitle,
-        content: `<div class="b3-dialog__content" style="padding:24px 16px;line-height:1.6;font-size:1.15em;">${this.i18n.deprecationDialogContent}</div>`,
+        content: `<div class="b3-dialog__content" style="padding:24px 16px;line-height:1.6;font-size:1.15em;">${this.i18n.deprecationDialogContent}<br><br><a href="https://github.com/siyuan-note/siyuan/issues/18097" target="_blank">${this.i18n.deprecationDialogMoreInfo}</a></div>`,
         width: "480px",
       });
       localStorage.setItem(DEPRECATION_SHOWN_KEY, "1");
