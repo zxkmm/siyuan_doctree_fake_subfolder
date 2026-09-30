@@ -1,9 +1,10 @@
-import { Plugin, getFrontend, getBackend, showMessage, Menu, Dialog } from "siyuan";
+import { Plugin, getFrontend, getBackend, showMessage, Menu } from "siyuan";
 import "@/index.scss";
 import { request, sql } from "./api";
 import { SettingUtils } from "./libs/setting-utils";
 
 import { stringToSet } from "./helpers";
+import { JumpNav, JumpPanelSize, JumpStartLocation } from "./jump-nav";
 
 const STORAGE_NAME = "menu-config";
 
@@ -32,6 +33,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   private trackedHeaders: WeakSet<Element> = new WeakSet();
   private handleEvent: ((e: MouseEvent | TouchEvent) => Promise<void | boolean>) | null = null;
   private readonly actionFlowClassPrefix = "sf-action-flow-";
+  private jumpNav: JumpNav | null = null;
 
   private buttons: {
     switcher: HTMLElement[];
@@ -572,10 +574,7 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     }
   }
 
-  private injectButtonsToHeader(header: HTMLElement) {
-    const iconId = this.modeIcons[this.mode];
-    const title = this.getModeTitle(this.mode);
-
+  private createHeaderButton(iconId: string, title: string, onClick: (e: MouseEvent) => void): HTMLElement {
     let btn: HTMLElement;
     if (this.isDesktop) {
       btn = document.createElement("span");
@@ -594,11 +593,36 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
 
     btn.onclick = (e) => {
       e.stopPropagation();
-      this.onSwitcherClick(e);
+      onClick(e);
     };
+    return btn;
+  }
 
+  private injectButtonsToHeader(header: HTMLElement) {
+    if (this.settingUtils.get("enable_jump_nav")) {
+      this.placeHeaderButton(header, this.createHeaderButton(
+        "iconDoctreeFakeSubfolderJump",
+        this.i18n.jumpNavCommand,
+        () => this.toggleJumpNav()
+      ));
+    }
+
+    const switcherEnabled = this.settingUtils.get("enable_mode_switch_buttons");
+    if (!switcherEnabled || this.settingUtils.get("button_location") === "topbar") {
+      return;
+    }
+
+    const btn = this.createHeaderButton(
+      this.modeIcons[this.mode],
+      this.getModeTitle(this.mode),
+      (e) => this.onSwitcherClick(e)
+    );
     this.buttons.switcher.push(btn);
+    this.placeHeaderButton(header, btn);
+    this.updateButtonStyles(this.mode);
+  }
 
+  private placeHeaderButton(header: HTMLElement, btn: HTMLElement) {
     if (this.isDesktop) {
       const logo = header.querySelector(".block__logo");
       if (logo) {
@@ -617,13 +641,9 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
         header.appendChild(btn);
       }
     }
-
-    this.updateButtonStyles(this.mode);
   }
 
   async onload() {
-    return;
-
     this.treatAsSubfolderIdSet = new Set();
     this.treatAsSubfolderEmojiSet = new Set();
 
@@ -694,6 +714,51 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
       },
     });
     this.settingUtils.addItem({
+      key: "enable_jump_nav",
+      value: true,
+      type: "checkbox",
+      title: this.i18n.enableJumpNav,
+      description: this.i18n.enableJumpNavDesc,
+    });
+    this.settingUtils.addItem({
+      key: "jump_start_location",
+      value: "root",
+      type: "select",
+      title: this.i18n.jumpStartLocation,
+      description: this.i18n.jumpStartLocationDesc,
+      options: {
+        root: this.i18n.jumpStartRoot,
+        last: this.i18n.jumpStartLast,
+        current: this.i18n.jumpStartCurrent,
+      },
+    });
+    this.settingUtils.addItem({
+      key: "jump_panel_size",
+      value: "large",
+      type: "select",
+      title: this.i18n.jumpPanelSize,
+      description: this.i18n.jumpPanelSizeDesc,
+      options: {
+        compact: this.i18n.jumpPanelCompact,
+        large: this.i18n.jumpPanelLarge,
+        fullscreen: this.i18n.jumpPanelFullscreen,
+      },
+    });
+    this.settingUtils.addItem({
+      key: "jump_show_recent",
+      value: true,
+      type: "checkbox",
+      title: this.i18n.jumpShowRecent,
+      description: this.i18n.jumpShowRecentDesc,
+    });
+    this.settingUtils.addItem({
+      key: "jump_hint_chars",
+      value: "asdfghjklqwertyuiopzxcvbnm",
+      type: "textinput",
+      title: this.i18n.jumpHintChars,
+      description: this.i18n.jumpHintCharsDesc,
+    });
+    this.settingUtils.addItem({
       key: "Hint",
       value: "",
       type: "hint",
@@ -727,6 +792,20 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
           <path d="M3 14C3 9.02944 7.02944 5 12 5C16.9706 5 21 9.02944 21 14M17 14C17 16.7614 14.7614 19 12 19C9.23858 19 7 16.7614 7 14C7 11.2386 9.23858 9 12 9C14.7614 9 17 11.2386 17 14Z"></path>
           </symbol>
           `);
+
+    this.addIcons(`
+      <symbol id="iconDoctreeFakeSubfolderJump" viewBox="0 0 24 24">
+          <path d="M4 4h7v7H4zM13 13h7v7h-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+          <path d="M14 4h6v6M20 4l-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </symbol>
+          `);
+
+    this.addCommand({
+      langKey: "jumpNavCommand",
+      langText: this.i18n.jumpNavCommand,
+      hotkey: "⌥J",
+      callback: () => this.toggleJumpNav(),
+    });
 
     this.frontend = getFrontend();
     this.backend = getBackend();
@@ -804,17 +883,6 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   }
 
   onLayoutReady() {
-    const DEPRECATION_SHOWN_KEY = "siyuan_doctree_fake_subfolder_deprecation_shown";
-    if (!localStorage.getItem(DEPRECATION_SHOWN_KEY)) {
-      new Dialog({
-        title: this.i18n.deprecationDialogTitle,
-        content: `<div class="b3-dialog__content" style="padding:24px 16px;line-height:1.6;font-size:1.15em;">${this.i18n.deprecationDialogContent}<br><br><a href="https://github.com/siyuan-note/siyuan/issues/18097" target="_blank">${this.i18n.deprecationDialogMoreInfo}</a></div>`,
-        width: "480px",
-      });
-      localStorage.setItem(DEPRECATION_SHOWN_KEY, "1");
-    }
-    return;
-
     console.log(this.frontend, this.backend);
     console.log(this.isPhone, this.isTablet, this.isDesktop);
     this.initListener();
@@ -832,16 +900,34 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
     ) as string;
     this.treatAsSubfolderIdSet = stringToSet(idsStr);
 
-    if (this.settingUtils.get("enable_mode_switch_buttons")) {
-      const location = this.settingUtils.get("button_location");
-      if (location === "topbar") {
-        this.addTopBarSwitcher();
-      } else {
-        this.initHeaderListener();
-      }
+    this.jumpNav = new JumpNav({
+      app: this.app,
+      isMobile: this.isPhone,
+      i18n: this.i18n as Record<string, string>,
+      hintChars: () => this.settingUtils.get("jump_hint_chars") as string,
+      startLocation: () => this.settingUtils.get("jump_start_location") as JumpStartLocation,
+      showRecent: () => !!this.settingUtils.get("jump_show_recent"),
+      panelSize: () => this.settingUtils.get("jump_panel_size") as JumpPanelSize,
+    });
 
+    const switcherEnabled = this.settingUtils.get("enable_mode_switch_buttons");
+    const switcherInTopbar = this.settingUtils.get("button_location") === "topbar";
+    if (switcherEnabled && switcherInTopbar) {
+      this.addTopBarSwitcher();
+    }
+    if ((switcherEnabled && !switcherInTopbar) || this.settingUtils.get("enable_jump_nav")) {
+      this.initHeaderListener();
+    }
+    if (switcherEnabled) {
       this.switchMode(DocTreeFakeSubfolderMode.Normal);
     }
+  }
+
+  private toggleJumpNav() {
+    if (!this.settingUtils.get("enable_jump_nav")) {
+      return;
+    }
+    this.jumpNav?.toggle();
   }
 
   private addTopBarSwitcher() {
@@ -855,6 +941,8 @@ export default class SiyuanDoctreeFakeSubfolder extends Plugin {
   }
 
   async onunload() {
+    this.jumpNav?.destroy();
+    this.jumpNav = null;
     // Cleanup: disconnect MutationObserver to prevent memory leaks
     if (this.mutationObserver) {
       this.mutationObserver.disconnect();
